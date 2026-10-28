@@ -181,7 +181,12 @@ func Finish[T any](
 			return Page[T]{}, err
 		}
 
-		page.Page.NextCursor = base64.RawURLEncoding.EncodeToString(data)
+		encoded := base64.RawURLEncoding.EncodeToString(data)
+		if len(encoded) > MaxCursor {
+			return Page[T]{}, ErrInvalid
+		}
+
+		page.Page.NextCursor = encoded
 	}
 
 	return page, nil

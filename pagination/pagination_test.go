@@ -122,3 +122,22 @@ func FuzzParse(f *testing.F) {
 		}
 	})
 }
+
+func TestEncodedCursorCannotExceedBound(t *testing.T) {
+	request, _ := Parse(
+		url.Values{"limit": {"1"}},
+		Binding(nil, "list", "verified"),
+	)
+
+	rows := []Key{
+		{Sort: strings.Repeat("\x00", 256), ID: strings.Repeat("\x00", 256)},
+		{ID: "lookahead"},
+	}
+	if page, err := Finish(
+		request,
+		rows,
+		func(k Key) Key { return k },
+	); err == nil {
+		t.Fatal("emitted oversized escaped cursor", page)
+	}
+}

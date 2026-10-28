@@ -33,7 +33,11 @@ var (
 
 // Scope MUST come from verified identity and current trusted tenant resolution.
 // Public routes need a separate explicit application policy; no anonymous scope.
-type Scope struct{ Subject, Tenant, Operation string }
+type Scope struct {
+	Subject   string
+	Tenant    string
+	Operation string
+}
 
 type Claim struct {
 	ID          string
