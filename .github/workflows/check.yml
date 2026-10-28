@@ -16,10 +16,18 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       PLUTO_CORE_TEST_DATABASE_URL: postgres://pluto_demo:local_only@localhost:5432/pluto_demo?sslmode=disable
+      PLUTO_CORE_CACHE_TEST_URLS: redis://:synthetic_only@127.0.0.1:6380,redis://:synthetic_only@127.0.0.1:6381
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v3
+      - name: Start isolated cache servers
+        run: |
+          docker run -d --name pluto-ci-valkey -p 127.0.0.1:6380:6379 valkey/valkey:9.1.3-alpine valkey-server --save '' --appendonly no --requirepass synthetic_only
+          docker run -d --name pluto-ci-redis -p 127.0.0.1:6381:6379 redis:8.10.3-alpine redis-server --save '' --appendonly no --requirepass synthetic_only
       - run: ./scripts/check.sh
       - run: ./scripts/test.sh -race
       - run: ./scripts/fuzz.sh
       - run: python3 scripts/mutation-smoke.py
+      - name: Remove cache servers
+        if: always()
+        run: docker rm -f pluto-ci-valkey pluto-ci-redis

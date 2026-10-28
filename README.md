@@ -99,3 +99,52 @@ business mutation/completion rollback and commit. Without
 `PLUTO_CORE_TEST_DATABASE_URL`, SQL tests explicitly skip; CI supplies a database.
 The mutation smoke is small, seeded guard verification, not a security audit.
 This MVP is pre-release and has not undergone independent security review.
+
+## Optional data caching
+
+Core v0.2.0 adds stdlib-only `cache` and `cache/memory`. The separately versioned
+`stores/valkey` module adapts standalone Valkey/Redis using valkey-go v1.0.79.
+The root module gains no third-party runtime dependency. The adapter's runtime
+imports are audited independently of test-only module requirements.
+
+Store.Get returns bytes, found and error separately: an empty value is a hit,
+while an outage is an error. Set requires a positive TTL from 1ms to the configured
+maximum (default 24h, configurable ceiling 7d). Default key/value bounds are 512
+bytes/1MiB. Memory is LRU-bounded by entries and combined key/value bytes; allocator
+and map/list overhead are not counted in that byte budget. Inputs/outputs are copied.
+
+Use `cache.Key(cache.Scope{App: ..., Environment: ..., Namespace: ..., Version: ...,
+TenantID: verifiedTenant, SubjectID: verifiedSubject}, resourceID)`. Length-framed
+hashing prevents separator collisions and keeps raw identifiers out of keys.
+Empty tenant/subject explicitly denotes shared data, not authorization. Version
+belongs to the cached data schema. Never derive authority from a client header.
+
+`cache.GetJSON[T]`, `SetJSON[T]` and `NewLoader[T]` provide typed JSON ergonomics.
+Loader.Remember coalesces concurrent calls within one loader/process, bounds active
+keys/waiters and gives the leader a cooperative load deadline. Followers can cancel
+independently; canceling the leader fails that flight. Returned JSON values have
+independent ownership. Successful values only are cached, never loader errors.
+Default Bypass loads from the database on backend/corruption errors; Strict returns
+those errors. Invalid options, unencodable or oversized loaded values are contract
+errors, not ordinary cache outages. Hooks receive fixed sentinels, never payloads.
+
+Data caches may be stale. Delete after successful commits; deletion can race an
+in-flight loader and does not prove read-after-write consistency. Versioned keys,
+stronger application coordination or bypass are needed where that matters. Keep
+identity, membership, permission checks, session revocation, locks, rate limits and
+durable idempotency outside this interface. Auth responses and secrets are not
+cache entries. No automatic HTTP response caching is provided.
+
+Valkey New validates configuration without dialing; the first operation connects,
+with bounded/coalesced initial retries after outages. Open additionally checks
+connectivity. Close belongs to the caller. Operations have explicit timeouts; only
+GET/SET PX/DEL are used. Client-side caching and topology discovery are disabled.
+Plaintext requires loopback or explicit AllowInsecure; rediss uses verified TLS.
+URL query/fragment options are rejected. No raw server errors/URLs are returned.
+The adapter rejects oversized results after the client receives them; the shared
+byte limit does not bound the third-party client's wire parsing allocations.
+
+Run `./scripts/cache-check.sh` for real authenticated Valkey 9.1.3 and Redis 8.10.3
+contract/race tests in disposable containers. These are the tested standalone
+versions, not a promise of all Redis versions, clusters or Sentinel support.
+Caching is optional; external adapters are not a new mandatory service for apps.

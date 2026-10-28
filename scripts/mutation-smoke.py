@@ -7,6 +7,9 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 mutations = [
+    ("cache/key.go", "scope.TenantID,", '"",', "./cache"),
+    ("cache/memory/store.go", "!s.config.Now().Before(value.expires)", "false", "./cache/memory"),
+    ("cache/loader.go", "pending.waiters >= l.options.MaxWaiters", "false", "./cache"),
     ("pagination/pagination.go", "limit > MaxLimit", "limit > 1000", "./pagination"),
     ("pagination/pagination.go", "value.Binding != binding", "false", "./pagination"),
     ("idempotency/memory/memory.go", "if r.claim.Fingerprint != claim.Fingerprint {", "if false {", "./idempotency/memory"),
