@@ -1,0 +1,25 @@
+name: check
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: pluto_demo
+          POSTGRES_PASSWORD: local_only
+          POSTGRES_DB: pluto_demo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pluto_demo"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PLUTO_CORE_TEST_DATABASE_URL: postgres://pluto_demo:local_only@localhost:5432/pluto_demo?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v3
+      - run: ./scripts/check.sh
+      - run: ./scripts/test.sh -race
+      - run: ./scripts/fuzz.sh
+      - run: python3 scripts/mutation-smoke.py

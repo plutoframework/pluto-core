@@ -1,0 +1,8 @@
+[tools]
+go = "1.25.5"
+golangci-lint = "2.15.0"
+
+[tasks.fmt]
+run = "./scripts/fmt.sh"
+[tasks.check]
+run = "./scripts/check.sh"
