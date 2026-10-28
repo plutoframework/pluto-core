@@ -342,3 +342,44 @@ func FuzzKey(f *testing.F) {
 		}
 	})
 }
+
+func TestMalformedFingerprintMetadataRejected(t *testing.T) {
+	h := setup(t)
+	scope := idempotency.Scope{Subject: "alice", Operation: "write"}
+	next := http.HandlerFunc(
+		func(http.ResponseWriter, *http.Request) { t.Fatal("executed ambiguous fingerprint") },
+	)
+
+	for _, field := range []string{"query", "content-type", "duplicate-content-type", "subject", "tenant", "operation"} {
+		t.Run(field, func(t *testing.T) {
+			r := httptest.NewRequest("POST", "/p", strings.NewReader(`{}`))
+			r.Header.Set("Idempotency-Key", "valid-key")
+			r.Header.Set("Content-Type", "application/json")
+
+			trusted := scope
+			malformed := string([]byte{0xff})
+
+			switch field {
+			case "query":
+				r.URL.RawQuery = malformed
+			case "content-type":
+				r.Header.Set("Content-Type", malformed)
+			case "duplicate-content-type":
+				r.Header.Add("Content-Type", "text/plain")
+			case "subject":
+				trusted.Subject = malformed
+			case "tenant":
+				trusted.Tenant = malformed
+			case "operation":
+				trusted.Operation = malformed
+			}
+
+			w := httptest.NewRecorder()
+			h.Serve(w, r, trusted, next)
+
+			if w.Code != 400 {
+				t.Fatal(w)
+			}
+		})
+	}
+}

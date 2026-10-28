@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -86,7 +87,10 @@ func NewClaim(
 	now time.Time,
 	ttl time.Duration,
 ) (Claim, error) {
-	if scope.Subject == "" || scope.Operation == "" ||
+	if !utf8.ValidString(scope.Subject) || !utf8.ValidString(scope.Tenant) ||
+		!utf8.ValidString(scope.Operation) ||
+		scope.Subject == "" ||
+		scope.Operation == "" ||
 		len(scope.Subject) > 256 ||
 		len(scope.Tenant) > 256 ||
 		len(scope.Operation) > 256 ||

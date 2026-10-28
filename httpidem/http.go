@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	"github.com/plutoframework/pluto-core/idempotency"
 )
@@ -59,6 +60,17 @@ func (h *Handler) Serve(
 	scope idempotency.Scope,
 	next http.Handler,
 ) {
+	// JSON fingerprint framing requires valid UTF-8 metadata. The body itself
+	// is hashed as exact bytes and need not be UTF-8.
+	if !utf8.ValidString(r.Method) || !utf8.ValidString(r.URL.EscapedPath()) ||
+		!utf8.ValidString(r.URL.RawQuery) ||
+		!utf8.ValidString(r.Header.Get("Content-Type")) ||
+		len(r.Header.Values("Content-Type")) > 1 {
+		h.writeError(w, r, idempotency.ErrInvalid)
+
+		return
+	}
+
 	keys := r.Header.Values("Idempotency-Key")
 	if len(keys) != 1 || !idempotency.ValidKey(keys[0]) {
 		h.writeError(w, r, idempotency.ErrInvalid)
