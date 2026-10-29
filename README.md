@@ -27,6 +27,16 @@ reviewed pgx/v5 v5.11.0 driver and generated typed sqlc queries.
   claims, `New(tx).Complete` for atomic completion and explicit bounded
   `PruneCompleted`. No startup schema work. See [transaction example](docs/transactions.md).
 
+## Optional OpenTelemetry
+
+`github.com/plutoframework/pluto-core/telemetry` is an independently versioned
+adapter module; root consumers retain standard-library-only dependencies.
+See [telemetry setup and privacy contract](telemetry/README.md) for explicit
+providers, OTLP export, Chi HTTP tracing/metrics, outbound HTTP propagation,
+PostgreSQL query tracing, cache/outbox/job decorators and slog correlation.
+Applications own startup configuration and bounded shutdown. Diagnostics never
+replace durable business or security audit records.
+
 ## Pagination contract
 
 Use an immutable ascending deterministic order and unique ID tie-breaker. Pass
