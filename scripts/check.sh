@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$PWD"
+export GOWORK=off
 
 python3 - <<'PYTHON'
 from pathlib import Path
@@ -14,7 +15,7 @@ for path in Path('.').rglob('*'):
         raise SystemExit(f'File exceeds 1,000 lines: {path}')
 PYTHON
 
-for module in . stores/postgres stores/valkey; do
+for module in . stores/postgres stores/valkey telemetry; do
   cd "$root/$module"
   "$root/scripts/golangci.sh" fmt --diff ./... > /tmp/pluto-core-format-$$.diff
   if [[ -s /tmp/pluto-core-format-$$.diff ]]; then
