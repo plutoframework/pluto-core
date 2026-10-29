@@ -46,11 +46,10 @@ func (r *Runtime) Middleware(next http.Handler) http.Handler {
 
 			status := ww.Status()
 			if status == 0 {
-				status = 200
-			}
-
-			if panicked != nil {
-				status = 500
+				status = http.StatusOK
+				if panicked != nil {
+					status = http.StatusInternalServerError
+				}
 			}
 
 			method := boundedMethod(req.Method)
@@ -64,6 +63,10 @@ func (r *Runtime) Middleware(next http.Handler) http.Handler {
 
 			if status >= 500 {
 				span.SetStatus(codes.Error, "server error")
+			}
+
+			if panicked != nil {
+				span.SetStatus(codes.Error, "handler panic")
 			}
 
 			if ctx.Err() != nil {

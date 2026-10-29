@@ -297,3 +297,44 @@ func TestDisabledAndEnvironment(t *testing.T) {
 	nilRuntime.PGXTracer().
 		TraceQueryStart(context.Background(), nil, pgx.TraceQueryStartData{})
 }
+
+func TestPanicPreservesWrittenStatus(t *testing.T) {
+	runtime, exporter, _ := testRuntime(t)
+	router := chi.NewRouter()
+	router.Use(runtime.Middleware)
+	router.Get(
+		"/panic-after-write",
+		func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusAccepted)
+			panic("private panic")
+		},
+	)
+	func() {
+		defer func() {
+			if recover() != "private panic" {
+				t.Error("panic changed")
+			}
+		}()
+
+		router.ServeHTTP(
+			httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/panic-after-write", nil),
+		)
+	}()
+
+	if err := runtime.tp.ForceFlush(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	spans := exporter.GetSpans()
+	if len(spans) != 1 || spans[0].Status.Code != codes.Error {
+		t.Fatal("missing panic error span")
+	}
+
+	for _, attr := range spans[0].Attributes {
+		if string(attr.Key) == "http.response.status_code" &&
+			attr.Value.AsInt64() != http.StatusAccepted {
+			t.Fatal("changed observed response status")
+		}
+	}
+}
