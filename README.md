@@ -24,31 +24,109 @@ From a Go **1.25.5+** module:
 go get github.com/plutoframework/pluto-core@v0.4.0
 ```
 
-### 2. Try a primitive
+### 2. Page a scoped collection
 
-Save this as `cmd/page/main.go`, then run `go run ./cmd/page`:
+This complete program follows two pages of synthetic purchases. Save it as
+`cmd/page/main.go` and run `go run ./cmd/page`, or run the checked-in example with
+`go run ./examples/pagination` from this repository.
+
+<!-- example-source: examples/pagination/main.go -->
 
 ```go
+// Pagination over synthetic, already ordered rows. No database is required.
 package main
 
 import (
-    "fmt"
-    "net/url"
+	"fmt"
+	"net/url"
 
-    "github.com/plutoframework/pluto-core/pagination"
+	"github.com/plutoframework/pluto-core/pagination"
 )
 
-func main() {
-    query := url.Values{"limit": {"10"}}
-    binding := pagination.Binding(query, "purchases:list", "verified-scope")
-    request, err := pagination.Parse(query, binding)
-    if err != nil {
-        panic(err)
-    }
+type purchase struct {
+	ID     string
+	Tenant string
+}
 
-    fmt.Println(request.Limit)
+func list(
+	rows []purchase,
+	verifiedTenant, cursor string,
+) (pagination.Page[purchase], error) {
+	query := url.Values{"limit": {"2"}}
+	if cursor != "" {
+		query.Set("cursor", cursor)
+	}
+
+	binding := pagination.Binding(query, "purchases:list", verifiedTenant)
+
+	request, err := pagination.Parse(query, binding)
+	if err != nil {
+		return pagination.Page[purchase]{}, err
+	}
+
+	// A SQL repository uses the same tenant predicate, strict key boundary and
+	// LIMIT limit+1. Cursor binding never supplies authorization.
+	selected := []purchase{}
+
+	for _, row := range rows {
+		if row.Tenant != verifiedTenant || row.ID <= request.After.ID {
+			continue
+		}
+
+		selected = append(selected, row)
+		if len(selected) == request.FetchLimit() {
+			break
+		}
+	}
+
+	return pagination.Finish(
+		request,
+		selected,
+		func(row purchase) pagination.Key {
+			return pagination.Key{ID: row.ID}
+		},
+	)
+}
+
+func main() {
+	rows := []purchase{
+		{ID: "purchase-01", Tenant: "north"},
+		{ID: "purchase-02", Tenant: "harbor"},
+		{ID: "purchase-03", Tenant: "north"},
+		{ID: "purchase-04", Tenant: "north"},
+		{ID: "purchase-05", Tenant: "harbor"},
+		{ID: "purchase-06", Tenant: "north"},
+	}
+
+	first, err := list(rows, "north", "")
+	if err != nil {
+		panic(err)
+	}
+
+	second, err := list(rows, "north", first.Page.NextCursor)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("first:", first.Data[0].ID, first.Data[1].ID)
+	fmt.Println("second:", second.Data[0].ID, second.Data[1].ID)
+	fmt.Println("more:", second.Page.HasMore)
 }
 ```
+
+<!-- /example-source -->
+
+Expected output:
+
+```text
+first: purchase-01 purchase-03
+second: purchase-04 purchase-06
+more: false
+```
+
+The dataset is ordered before paging. Each page reapplies the tenant predicate
+and strict ID boundary, then fetches only `limit + 1` rows. The [tests](examples/pagination/main_test.go)
+also reject a cursor replayed in another scope. A cursor never grants access.
 
 ### 3. Connect the application boundary
 
