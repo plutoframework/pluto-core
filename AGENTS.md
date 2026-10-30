@@ -1,6 +1,6 @@
 # Working on Pluto Core
 
-Keep the runtime focused on pagination, idempotency and explicit data caching.
+Keep the runtime focused on pagination, idempotency, explicit data caching and state transitions.
 Root packages are stdlib-only. PostgreSQL/pgx and Valkey clients stay in separate
 stores/postgres and stores/valkey modules. Cache failures are distinct from misses;
 never use the data cache as an authority for auth, permissions or durable claims.

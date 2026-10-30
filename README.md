@@ -158,3 +158,14 @@ Run `./scripts/cache-check.sh` for real authenticated Valkey 9.1.3 and Redis 8.1
 contract/race tests in disposable containers. These are the tested standalone
 versions, not a promise of all Redis versions, clusters or Sentinel support.
 Caching is optional; external adapters are not a new mandatory service for apps.
+
+## Business lifecycles
+
+Import `github.com/plutoframework/pluto-core/state` for typed, explicit states,
+events and pure business guards. `New` validates the definition once; `Next`
+decides a transition without mutating an entity. Unknown transitions fail
+closed. The caller retains authorization and atomic persistence ownership.
+
+See [the state package](state/README.md) and the compiling
+[purchase lifecycle](examples/purchases/lifecycle.go). The Pluto CLI command
+`pluto add state GROUP` scaffolds an authored lifecycle and its tests.
