@@ -5,6 +5,300 @@ writes. Go 1.25.5+, MIT. The root module uses only the standard library. The
 optional `github.com/plutoframework/pluto-core/stores/postgres` module uses the
 reviewed pgx/v5 v5.11.0 driver and generated typed sqlc queries.
 
+## Install
+
+```sh
+go get github.com/plutoframework/pluto-core@v0.4.0
+```
+
+The examples below compile against the published root module. PostgreSQL and
+Valkey adapters are separate modules; apply their schemas explicitly and retain
+ownership of connection pools, transactions and cleanup.
+
+## Follow a cursor across pages
+
+This complete program runs the actual pagination primitive over ordered local
+rows. It filters by tenant on every page, uses a strict ID boundary and fetches
+only `limit+1` matching rows. Save it as `main.go` and run `go run .`:
+
+<!-- example-source: examples/pagination/main.go -->
+
+```go
+// Pagination over synthetic, already ordered rows. No database is required.
+package main
+
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/plutoframework/pluto-core/pagination"
+)
+
+type purchase struct {
+	ID     string
+	Tenant string
+}
+
+func list(
+	rows []purchase,
+	verifiedTenant, cursor string,
+) (pagination.Page[purchase], error) {
+	query := url.Values{"limit": {"2"}}
+	if cursor != "" {
+		query.Set("cursor", cursor)
+	}
+
+	binding := pagination.Binding(query, "purchases:list", verifiedTenant)
+
+	request, err := pagination.Parse(query, binding)
+	if err != nil {
+		return pagination.Page[purchase]{}, err
+	}
+
+	// A SQL repository uses the same tenant predicate, strict key boundary and
+	// LIMIT limit+1. Cursor binding never supplies authorization.
+	selected := []purchase{}
+
+	for _, row := range rows {
+		if row.Tenant != verifiedTenant || row.ID <= request.After.ID {
+			continue
+		}
+
+		selected = append(selected, row)
+		if len(selected) == request.FetchLimit() {
+			break
+		}
+	}
+
+	return pagination.Finish(
+		request,
+		selected,
+		func(row purchase) pagination.Key {
+			return pagination.Key{ID: row.ID}
+		},
+	)
+}
+
+func main() {
+	rows := []purchase{
+		{ID: "purchase-01", Tenant: "north"},
+		{ID: "purchase-02", Tenant: "harbor"},
+		{ID: "purchase-03", Tenant: "north"},
+		{ID: "purchase-04", Tenant: "north"},
+		{ID: "purchase-05", Tenant: "harbor"},
+		{ID: "purchase-06", Tenant: "north"},
+	}
+
+	first, err := list(rows, "north", "")
+	if err != nil {
+		panic(err)
+	}
+
+	second, err := list(rows, "north", first.Page.NextCursor)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("first:", first.Data[0].ID, first.Data[1].ID)
+	fmt.Println("second:", second.Data[0].ID, second.Data[1].ID)
+	fmt.Println("more:", second.Page.HasMore)
+}
+```
+
+<!-- /example-source -->
+
+Expected output:
+
+```text
+first: purchase-01 purchase-03
+second: purchase-04 purchase-06
+more: false
+```
+
+For PostgreSQL, keep the same predicates in the repository query:
+
+```sql
+SELECT id, tenant_id
+FROM purchases
+WHERE tenant_id = $1 AND id > $2
+ORDER BY id ASC
+LIMIT $3;
+```
+
+Bind the verified tenant, `request.After.ID` and `request.FetchLimit()`. Use the
+appropriate ID type and first-page boundary for your schema. The
+[purchasing app repository](https://github.com/plutoframework/pluto-example/tree/main/internal/storage/postgres)
+shows the complete pgx/sqlc integration. Cursor contents never supply authority.
+
+## Protect a business write from duplicate execution
+
+This complete HTTP adapter accepts a real business handler and an application
+`Authorize` callback. Construct it once with the durable PostgreSQL store in a
+multi-instance deployment. The callback must check current identity, membership,
+permission, feature availability and resource access before returning its scope.
+
+<!-- example-source: examples/businesswrite/handler.go -->
+
+```go
+// Package businesswrite wraps an authorized business operation in JSON replay.
+package businesswrite
+
+import (
+	"net/http"
+	"time"
+
+	"github.com/plutoframework/pluto-core/httpidem"
+	"github.com/plutoframework/pluto-core/idempotency"
+)
+
+// Authorize checks current identity, permissions, flag and resource access.
+// Its returned scope contains verified subject/tenant and a stable operation ID.
+type Authorize func(*http.Request) (idempotency.Scope, error)
+
+func New(
+	store idempotency.Store,
+	authorize Authorize,
+	create http.Handler,
+) (http.Handler, error) {
+	if authorize == nil || create == nil {
+		return nil, idempotency.ErrInvalid
+	}
+
+	replay, err := httpidem.New(
+		store,
+		24*time.Hour,
+		64<<10,
+		64<<10,
+		func(w http.ResponseWriter, _ *http.Request, err error) {
+			http.Error(w, "business request rejected", httpidem.Status(err))
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		scope, err := authorize(r)
+		if err != nil {
+			http.Error(w, "access denied", http.StatusForbidden)
+
+			return
+		}
+
+		// Authorization runs on every request, including completed replays.
+		replay.Serve(w, r, scope, create)
+	}), nil
+}
+```
+
+<!-- /example-source -->
+
+The caller mounts the returned handler on a write route. `create` must produce a
+bounded JSON business response; credential/session routes are excluded. Send one
+stable `Idempotency-Key` per intended action, reusing it only for that action's
+retries. Matching completed requests replay the response. Different content with
+the same key conflicts; unfinished requests remain blocked for reconciliation.
+
+The generic HTTP adapter completes the claim after the business operation. For
+atomic database mutation and completion, use the
+[same-transaction recipe](transactions.md). External delivery belongs in an
+outbox; this adapter cannot make an external side effect exactly once.
+
+## Cache typed data with a scoped read-through loader
+
+This application example keeps one loader per `Catalog`, injects a real repository
+and reads the repository only on a miss or configured cache bypass. Its repository
+must apply tenant predicates; the operation must authorize before calling `Get`.
+
+<!-- example-source: examples/catalog/catalog.go -->
+
+```go
+// Package catalog shows typed read-through caching over a repository.
+package catalog
+
+import (
+	"context"
+	"time"
+
+	"github.com/plutoframework/pluto-core/cache"
+)
+
+type Product struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type Repository interface {
+	Read(context.Context, string, string) (Product, error)
+}
+
+type Catalog struct {
+	loader *cache.Loader[Product]
+	repo   Repository
+}
+
+func New(store cache.Store, repo Repository) (*Catalog, error) {
+	if repo == nil {
+		return nil, cache.ErrInvalid
+	}
+
+	loader, err := cache.NewLoader[Product](store, cache.DefaultLoaderOptions())
+	if err != nil {
+		return nil, err
+	}
+
+	return &Catalog{loader: loader, repo: repo}, nil
+}
+
+// Get follows authentication and current resource authorization in the operation.
+// Scope comes from verified application context, never arbitrary client headers.
+func (catalog *Catalog) Get(
+	ctx context.Context,
+	scope cache.Scope,
+	id string,
+) (Product, error) {
+	key, err := cache.Key(scope, id)
+	if err != nil {
+		return Product{}, err
+	}
+
+	return catalog.loader.Remember(
+		ctx,
+		key,
+		time.Minute,
+		func(ctx context.Context) (Product, error) {
+			return catalog.repo.Read(ctx, scope.TenantID, id)
+		},
+	)
+}
+```
+
+<!-- /example-source -->
+
+Use `cache.Scope` with your app, environment, namespace, data-schema version and
+verified tenant/subject. The same scope and resource ID produce the key for
+invalidation. After a successful write commits, call `store.Delete(ctx, key)`.
+Failed writes must not evict or publish uncommitted values. In-flight reads can
+race invalidation; bypass or stronger application coordination is needed where
+stale data is unacceptable.
+
+Use `cache/memory` for bounded local data, or the optional `stores/valkey` adapter
+for shared data. Never cache sessions, credentials, current permissions or other
+security decisions in this data-cache layer. Backend failures and misses remain
+distinct; the default loader bypasses cache failures to the repository.
+
+## Run the examples' checks
+
+From a Core checkout:
+
+```sh
+go test -race ./examples/...
+```
+
+The pagination and flag examples execute pure primitives. The cache and HTTP
+examples accept application callbacks; their tests use controlled dependencies.
+Those tests do not claim a live PostgreSQL or Valkey integration.
+
 ## Code tour and API
 
 - `pagination`: `Binding(query, verifiedScope...)`, `Parse(query, binding)`,
