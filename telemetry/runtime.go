@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -130,7 +131,12 @@ func New(ctx context.Context, c Config) (*Runtime, error) {
 	if exp == nil {
 		opts := []otlptracehttp.Option{}
 		if c.Endpoint != "" {
-			opts = append(opts, otlptracehttp.WithEndpointURL(c.Endpoint))
+			opts = append(
+				opts,
+				otlptracehttp.WithEndpointURL(
+					signalEndpoint(c.Endpoint, "/v1/traces"),
+				),
+			)
 		}
 
 		var err error
@@ -145,7 +151,12 @@ func New(ctx context.Context, c Config) (*Runtime, error) {
 	if reader == nil {
 		opts := []otlpmetrichttp.Option{}
 		if c.Endpoint != "" {
-			opts = append(opts, otlpmetrichttp.WithEndpointURL(c.Endpoint))
+			opts = append(
+				opts,
+				otlpmetrichttp.WithEndpointURL(
+					signalEndpoint(c.Endpoint, "/v1/metrics"),
+				),
+			)
 		}
 
 		ex, err := otlpmetrichttp.New(ctx, opts...)
@@ -173,6 +184,17 @@ func New(ctx context.Context, c Config) (*Runtime, error) {
 	r.Meter = r.mp.Meter("github.com/plutoframework/pluto-core/telemetry")
 
 	return r, nil
+}
+
+func signalEndpoint(endpoint, signalPath string) string {
+	u, err := url.Parse(endpoint)
+	if err != nil || strings.TrimSpace(u.Path) != "" {
+		return endpoint
+	}
+
+	u.Path = signalPath
+
+	return u.String()
 }
 
 func (r *Runtime) Shutdown(ctx context.Context) error {
