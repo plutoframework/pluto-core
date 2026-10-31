@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+go run ./scripts/commentspacing -formatter "$PWD/scripts/golangci.sh" .
 root="$PWD"
 export GOWORK=off
 
@@ -17,14 +18,7 @@ PYTHON
 
 for module in . stores/postgres stores/valkey telemetry; do
   cd "$root/$module"
-  "$root/scripts/golangci.sh" fmt --diff ./... > /tmp/pluto-core-format-$$.diff
-  if [[ -s /tmp/pluto-core-format-$$.diff ]]; then
-    cat /tmp/pluto-core-format-$$.diff
-    rm /tmp/pluto-core-format-$$.diff
-    exit 1
-  fi
-  rm /tmp/pluto-core-format-$$.diff
-  "$root/scripts/golangci.sh" run ./...
+  "$root/scripts/lint.sh" ./...
   go test ./...
   go vet ./...
   go build ./...
