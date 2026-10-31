@@ -60,6 +60,7 @@ func (h *Handler) Serve(
 	scope idempotency.Scope,
 	next http.Handler,
 ) {
+
 	// JSON fingerprint framing requires valid UTF-8 metadata. The body itself
 	// is hashed as exact bytes and need not be UTF-8.
 	if !utf8.ValidString(r.Method) || !utf8.ValidString(r.URL.EscapedPath()) ||
@@ -181,6 +182,7 @@ func (h *Handler) Serve(
 		ContentType: capture.header.Get("Content-Type"),
 		Body:        capture.body.Bytes(),
 	}
+
 	// Preserve application errors without recording them. The claim remains
 	// pending: an error response does not prove that side effects rolled back.
 	if response.ContentType == "application/json" &&

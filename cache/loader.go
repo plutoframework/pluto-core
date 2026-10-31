@@ -20,6 +20,7 @@ type LoaderOptions struct {
 	MaxInFlight   int
 	MaxWaiters    int
 	LoadTimeout   time.Duration
+
 	// OnError receives only fixed sentinels, never keys, payloads or raw errors.
 	OnError func(error)
 }
