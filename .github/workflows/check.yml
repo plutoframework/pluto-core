@@ -28,7 +28,7 @@ jobs:
           gh repo clone plutoframework/pluto-auth ../pluto-auth
           git -C ../pluto-auth checkout cb55546221727f16a00f88cc24543b380dab5813
           gh repo clone plutoframework/pluto-rbac ../pluto-rbac
-          git -C ../pluto-rbac checkout 84ed4e943ff871f34dc1c143186c0c39a7c614bf
+          git -C ../pluto-rbac checkout 60578bc645b27b69173dd04e6140a8d5d5d0b616
           gh repo clone plutoframework/pluto-jobs ../pluto-jobs
           git -C ../pluto-jobs checkout f0ded6880c19b258bb9d747764b161a7f6e2d1ff
       - uses: jdx/mise-action@v3
