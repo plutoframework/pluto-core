@@ -16,7 +16,7 @@ for path in Path('.').rglob('*'):
         raise SystemExit(f'File exceeds 1,000 lines: {path}')
 PYTHON
 
-for module in . stores/postgres stores/valkey telemetry; do
+for module in . stores/postgres stores/valkey telemetry examples/shipments/postgres; do
   cd "$root/$module"
   "$root/scripts/lint.sh" ./...
   go test ./...

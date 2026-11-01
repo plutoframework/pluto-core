@@ -474,3 +474,11 @@ foreign machines and mismatched snapshots fail closed. This additive local API
 is unpublished; it preserves `Next` and does not provide authorization,
 single-use tokens or database compare-and-swap. See `state/README.md` and the
 restricted write/concurrency fixture in `state/evaluated_test.go`.
+
+The unpublished nested reference consumer `examples/shipments/postgres` provides
+concrete shipment SQL CAS and transactional outbox evidence for a restricted
+`Evaluated` write port. It owns its transaction and fixed sqlc queries, rather
+than accepting an arbitrary callback and claiming atomicity. It is application
+example code with an explicit local candidate replacement; published adapter
+pins and generic Core APIs remain unchanged. See its README and the strict
+`scripts/postgres-check.sh` disposable database command.

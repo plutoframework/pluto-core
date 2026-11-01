@@ -71,3 +71,9 @@ copied and replayed; they are neither consumed nor expired. Machine provenance
 is not current authorization, and guards are not rerun by validation. Private
 entity state, controlled initial construction/rehydration and enforced consumer
 adoption remain application and tooling responsibilities.
+
+For concrete PostgreSQL CAS and transactional outbox proof, see the unpublished
+nested consumer module `examples/shipments/postgres`. Its strict database command
+requires real execution and rejects missing or skipped required cases. This is
+one adopted application write path, not automatic enforcement for every Core
+consumer or a generic ORM.

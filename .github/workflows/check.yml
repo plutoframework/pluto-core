@@ -15,6 +15,7 @@ jobs:
           --health-cmd "pg_isready -U pluto_demo"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      PLUTO_CORE_REQUIRE_DATABASE: "1"
       PLUTO_CORE_TEST_DATABASE_URL: postgres://pluto_demo:local_only@localhost:5432/pluto_demo?sslmode=disable
       PLUTO_CORE_CACHE_TEST_URLS: redis://:synthetic_only@127.0.0.1:6380,redis://:synthetic_only@127.0.0.1:6381
     steps:
@@ -28,6 +29,8 @@ jobs:
       - run: ./scripts/test.sh -race
       - run: ./scripts/fuzz.sh
       - run: python3 scripts/mutation-smoke.py
+      - name: Require isolated PostgreSQL lifecycle and mutation evidence
+        run: PLUTO_CORE_SQL_MUTATION=1 ./scripts/postgres-check.sh
       - name: Remove cache servers
         if: always()
         run: docker rm -f pluto-ci-valkey pluto-ci-redis

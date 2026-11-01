@@ -23,6 +23,12 @@ func isolated(t *testing.T) (*pgxpool.Pool, *Store) {
 
 	url := os.Getenv("PLUTO_CORE_TEST_DATABASE_URL")
 	if url == "" {
+		if os.Getenv("PLUTO_CORE_REQUIRE_DATABASE") == "1" {
+			t.Fatal(
+				"required SQL integration needs PLUTO_CORE_TEST_DATABASE_URL",
+			)
+		}
+
 		t.Skip("SQL integration requires PLUTO_CORE_TEST_DATABASE_URL")
 	}
 

@@ -54,3 +54,26 @@ commit publishes mutation, audit and completion together, so a retry can replay.
 Never complete using the pool while the business tx is uncommitted. Never place
 an external side effect in a transaction and infer rollback undid it. Integration
 tests in `stores/postgres` exercise this pattern with real PostgreSQL.
+
+## Evaluated lifecycle writes (unpublished reference consumer)
+
+`examples/shipments/postgres` is a separate local-candidate consumer module, not
+an ORM or a production generic adapter. Its restricted dispatch port requires an
+opaque evaluated transition. The concrete writer validates the owning machine,
+then owns a PostgreSQL transaction whose SQL matches scope, entity, source state
+and version before updating state and inserting outbox/audit intent. Tests use a
+real isolated database to reject stale/replayed decisions and prove outbox
+failure rolls back the state update. This demonstrates one adopted write path;
+it does not make all existing application writes mandatory or authorized.
+
+Run `scripts/postgres-check.sh` for disposable-container evidence across the
+existing PostgreSQL adapter and the reference consumer. The consumer's strict
+`make database` command fails without its explicit database URL and rejects
+skipped or absent required SQL cases. Its local Core replacement is intentional
+unpublished development wiring, not release-pin compatibility evidence.
+
+The checked-in Core workflow also invokes that strict disposable database command
+with SQL mutations enabled. This is workflow wiring, not verification of hosted
+branch protection or a claim that a remote CI run has executed. Ordinary local
+checks can still skip SQL when no database URL is configured; strict evidence
+comes from the explicit command and its required-case assertions.
