@@ -7,6 +7,9 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 mutations = [
+    ("state/evaluated.go", "if !e.valid {", "if false {", "./state"),
+    ("state/evaluated.go", "if e.binding != current {", "if false {", "./state"),
+    ("state/evaluated.go", "e.origin != m.identity", "false", "./state"),
     ("state/state.go", "if transition.Guard != nil {", "if false {", "./state"),
     ("state/state.go", "!fromKnown || !toKnown || transition.On == \"\" || duplicate", "!fromKnown || !toKnown || transition.On == \"\" || (duplicate && false)", "./state"),
     ("cache/key.go", "scope.TenantID,", '"",', "./cache"),

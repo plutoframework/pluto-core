@@ -463,3 +463,14 @@ closed. The caller retains authorization and atomic persistence ownership.
 See [the state package](../state/README.md) and the compiling
 [purchase lifecycle](../examples/purchases/lifecycle.go). The Pluto CLI command
 `pluto add state GROUP` scaffolds an authored lifecycle and its tests.
+
+### Unpublished bound lifecycle decisions
+
+`state.Machine.Evaluate` returns an opaque `state.Evaluated[S,E]` bound to
+`state.Binding[S]` (scope, entity, source state, expected version). Restricted
+write ports should require this token and use the intended machine instance's
+`Validate` before atomically comparing the binding in storage. Zero values,
+foreign machines and mismatched snapshots fail closed. This additive local API
+is unpublished; it preserves `Next` and does not provide authorization,
+single-use tokens or database compare-and-swap. See `state/README.md` and the
+restricted write/concurrency fixture in `state/evaluated_test.go`.

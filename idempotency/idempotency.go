@@ -54,9 +54,11 @@ type Response struct {
 }
 
 type Store interface {
+
 	// Begin atomically inserts a claim, replays a completed matching claim, or
 	// returns ErrConflict/ErrInProgress. Only expired COMPLETED claims may renew.
 	Begin(context.Context, Claim) (*Response, error)
+
 	// Complete must compare ID, owner and fingerprint. Errors never release claims.
 	Complete(context.Context, Claim, Response) error
 }

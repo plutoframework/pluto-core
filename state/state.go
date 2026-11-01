@@ -38,6 +38,7 @@ type key[S ~string, E ~string] struct {
 // Machine holds a compiled definition, not the current state of an entity.
 // Its maps are immutable. Guards must be safe for concurrent evaluation.
 type Machine[S ~string, E ~string, F any] struct {
+	identity    *byte
 	states      map[S]struct{}
 	transitions map[key[S, E]]Transition[S, E, F]
 }
@@ -55,6 +56,7 @@ func New[S ~string, E ~string, F any](
 	}
 
 	m := &Machine[S, E, F]{
+		identity:    new(byte),
 		states:      make(map[S]struct{}, len(d.States)),
 		transitions: make(map[key[S, E]]Transition[S, E, F]),
 	}
