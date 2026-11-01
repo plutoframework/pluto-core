@@ -77,3 +77,14 @@ with SQL mutations enabled. This is workflow wiring, not verification of hosted
 branch protection or a claim that a remote CI run has executed. Ordinary local
 checks can still skip SQL when no database URL is configured; strict evidence
 comes from the explicit command and its required-case assertions.
+
+The explicit `plutocandidate` application profile additionally demonstrates an
+identity/resource-bound claim attempt followed by fixed SQL mutation, audit,
+typed Jobs enqueue and claim completion in one owned transaction. Its authored
+operation uses shared contract-only ports. The candidate Data adapter gates all
+reads/cache hits, applies SQL visibility before keyset limits and provides a
+bounded export over that same visible query. This profile requires explicit
+local Auth/RBAC/Jobs candidates and `PLUTO_CORE_CANDIDATE_DATA=1`; default Core
+checks and the established adapter pins do not depend on those unpublished APIs.
+See the reference README for exact wiring, operational tests and concurrency
+limits. These application contracts do not make arbitrary callbacks or SQL safe.

@@ -1,12 +1,16 @@
 """Classify semantic SQL mutation failures, never generic test failures."""
 import json
+import os
 import re
 
 REQUIRED = {
     'TestPostgresDispatchBinding',
     'TestPostgresConcurrentReplay',
     'TestPostgresOutboxRollback',
+
 }
+if os.environ.get('PLUTO_CORE_CANDIDATE_DATA') == '1':
+    REQUIRED |= {'TestPostgresAuthorizedScopedCache', 'TestPostgresVisiblePaginationAndBoundedExport', 'TestPostgresDeclaredAtomicDispatch', 'TestPostgresTypedDeliveryAfterCommit', 'TestPostgresConcurrentIdempotentDispatch'}
 
 
 def events(result):
@@ -32,14 +36,14 @@ def pristine(result):
         raise ValueError('pristine SQL control failed or required cases absent')
 
 
-def killed(result, target, assertion):
+def killed(result, target, assertion, test_file="writer_test.go"):
     records = events(result)
     expected = {target, target.split('/')[0]}
     failed = {record.get('Test') for record in records
               if record.get('Action') == 'fail' and record.get('Test')}
     if result.returncode != 1 or failed != expected:
         raise ValueError('survived or wrong failing test/subtest')
-    marker = re.compile(r'^\s+writer_test\.go:\d+: ' + re.escape(assertion) + r'\n?$')
+    marker = re.compile(r'^\s+' + re.escape(test_file) + r':\d+: ' + re.escape(assertion) + r'\n?$')
     found = 0
     for record in records:
         test = record.get('Test')

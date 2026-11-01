@@ -14,6 +14,16 @@ CREATE TABLE shipment_dispatch_outbox (
     shipment_id text NOT NULL,
     version bigint NOT NULL,
     event text NOT NULL CHECK (event = 'dispatch'),
+    actor_id text NOT NULL DEFAULT '',
     PRIMARY KEY (tenant_id, shipment_id, version),
+    FOREIGN KEY (tenant_id, shipment_id) REFERENCES shipments (tenant_id, id)
+);
+
+-- Application-owned visibility relation, checked before keyset pagination.
+CREATE TABLE shipment_visibility (
+    tenant_id text NOT NULL,
+    shipment_id text NOT NULL,
+    subject_id text NOT NULL,
+    PRIMARY KEY (tenant_id, shipment_id, subject_id),
     FOREIGN KEY (tenant_id, shipment_id) REFERENCES shipments (tenant_id, id)
 );

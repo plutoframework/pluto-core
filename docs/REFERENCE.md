@@ -482,3 +482,13 @@ than accepting an arbitrary callback and claiming atomicity. It is application
 example code with an explicit local candidate replacement; published adapter
 pins and generic Core APIs remain unchanged. See its README and the strict
 `scripts/postgres-check.sh` disposable database command.
+
+The complete data-contract reference is an explicitly gated `plutocandidate`
+profile in `examples/shipments/postgres`, enabled by
+`PLUTO_CORE_CANDIDATE_DATA=1`. It demonstrates private normalized input,
+identity/resource-gated operation ports, opaque claim attempts, atomic
+mutation/audit/Jobs/idempotency completion, fresh authorized cache access,
+visibility-before-pagination and bounded exports. Its operation/contract/data
+source responsibilities remain separate. It depends on explicit local sibling
+candidates; it is application reference code, not a universal CRUD framework or
+a published dependency guarantee.

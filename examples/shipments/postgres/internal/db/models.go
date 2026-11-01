@@ -17,4 +17,11 @@ type ShipmentDispatchOutbox struct {
 	ShipmentID string
 	Version    int64
 	Event      string
+	ActorID    string
+}
+
+type ShipmentVisibility struct {
+	TenantID   string
+	ShipmentID string
+	SubjectID  string
 }

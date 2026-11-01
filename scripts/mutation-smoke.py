@@ -7,6 +7,8 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 mutations = [
+    ("examples/shipments/input.go", "rows > MaxExportRows", "false", "./examples/shipments"),
+    ("examples/shipments/input.go", "id := strings.TrimSpace(rawID)", 'id := strings.TrimSpace(rawID) + " "', "./examples/shipments"),
     ("state/evaluated.go", "if !e.valid {", "if false {", "./state"),
     ("state/evaluated.go", "if e.binding != current {", "if false {", "./state"),
     ("state/evaluated.go", "e.origin != m.identity", "false", "./state"),
