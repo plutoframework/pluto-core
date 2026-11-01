@@ -261,7 +261,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 		func(ctx context.Context, execution *identitygate.Execution) error {
 			escaped = execution
 
-			first, err := f.data.Load(ctx, execution, snapshot.ID)
+			first, err := f.data.Display(ctx, execution, snapshot.ID)
 			if err != nil {
 				return err
 			}
@@ -273,7 +273,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 			count := f.cache.gets.Load()
 
 			f.resource = false
-			if _, err := f.data.Load(
+			if _, err := f.data.Display(
 				ctx,
 				execution,
 				snapshot.ID,
@@ -287,7 +287,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 			f.resource = true
 
 			f.membership = false
-			if _, err := f.data.Load(
+			if _, err := f.data.Display(
 				ctx,
 				execution,
 				snapshot.ID,
@@ -310,7 +310,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 				return err
 			}
 
-			if _, err := f.data.Load(
+			if _, err := f.data.Display(
 				ctx,
 				execution,
 				snapshot.ID,
@@ -334,7 +334,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 				return err
 			}
 
-			cached, err := f.data.Load(ctx, execution, snapshot.ID)
+			cached, err := f.data.Display(ctx, execution, snapshot.ID)
 			if err != nil {
 				return err
 			}
@@ -351,7 +351,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 	}
 
 	count := f.cache.gets.Load()
-	if _, err := f.data.Load(t.Context(), escaped, snapshot.ID); err == nil {
+	if _, err := f.data.Display(t.Context(), escaped, snapshot.ID); err == nil {
 		t.Fatal("escaped execution reached cache")
 	}
 
@@ -364,7 +364,7 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 		"bob",
 		snapshot.ID,
 		func(ctx context.Context, execution *identitygate.Execution) error {
-			value, err := f.data.Load(ctx, execution, snapshot.ID)
+			value, err := f.data.Display(ctx, execution, snapshot.ID)
 			if err != nil {
 				return err
 			}
@@ -385,7 +385,11 @@ func TestPostgresAuthorizedScopedCache(t *testing.T) {
 		"alice",
 		shipmentpostgres.CollectionResource,
 		func(ctx context.Context, execution *identitygate.Execution) error {
-			if _, err := f.data.Load(ctx, execution, snapshot.ID); err == nil {
+			if _, err := f.data.Display(
+				ctx,
+				execution,
+				snapshot.ID,
+			); err == nil {
 				return fmt.Errorf("collection execution authorized entity read")
 			}
 

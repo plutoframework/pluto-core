@@ -126,7 +126,9 @@ commit failures: none may publish a partial transaction. Pending/uncertain claim
 remain pending; retries do not steal them or mint another delivery ID. Current
 authorization and visibility are reapplied even before replaying a response.
 
-`Load` performs a fresh row-visibility query before even a cache hit. Cache keys
+`Load` reads authoritative SQL facts for lifecycle guards and never consults the
+cache. `Display` performs a fresh row-visibility query before even a cache hit.
+Cache keys
 include verified actor, tenant, entity and fixed schema namespace/version. Cache
 snapshots remain non-authoritative and TTL-bounded; every relevant fact change
 must advance entity version. Post-commit invalidation is best effort and cannot
@@ -143,11 +145,18 @@ fencing. `DeliverySchema` is an explicit snapshot of the candidate Jobs migratio
 apply it, the Core idempotency schema and the application schema deliberately.
 Constructors perform no DDL and no transaction spans external delivery.
 
-The candidate strict runner requires all eight shipment SQL cases plus the two
-existing adapter cases. Thirteen SQL mutations require the exact intended
+The candidate strict runner requires all nine shipment SQL cases plus the two
+existing adapter cases. Fourteen SQL mutations require the exact intended
 business assertion, with pristine controls before and after; malformed setup,
 missing dependencies/databases, skips, build failures and timeouts cannot count
 as semantic rejection. Independent compiler, runtime, SQL and generated-consumer
 adoption remain separate proof boundaries. The root Core workflow exercises the
 default standalone profile; a candidate integration job must opt into the tag
 with its verified sibling checkouts. No hosted branch protections are implied.
+
+The corrupted-cache regression deliberately stores a display snapshot claiming
+address verification while the authoritative row is unverified at the same
+state/version. Display reaches that cache entry as a positive control; the
+transition operation still denies dispatch from authoritative SQL facts. This
+covers corruption, not just ordinary cache freshness. Replacing authoritative
+`Load` with cached display access is an explicit semantic mutation.

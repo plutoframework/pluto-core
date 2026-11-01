@@ -394,3 +394,5 @@ var (
 	_ contract.ListData     = (*Data)(nil)
 	_ contract.ExportData   = (*Data)(nil)
 )
+
+var _ contract.DisplayData = (*Data)(nil)

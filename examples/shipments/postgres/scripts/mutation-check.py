@@ -54,6 +54,9 @@ if os.environ.get("PLUTO_CORE_CANDIDATE_DATA") == "1":
     (consumer / 'reads.go', 'execution.TenantID(),\n\t\tid,', 'execution.TenantID(),\n\t\texecution.ResourceID(),',
      'TestPostgresAuthorizedScopedCache', 'collection execution authorized entity read', 'data_test.go'),
 
+    (consumer / 'reads.go', 'd.load(ctx, execution, id, false)', 'd.load(ctx, execution, id, true)',
+     'TestPostgresAuthoritativeGuardFacts', 'CACHED_GUARD_FACTS_AUTHORIZED_TRANSITION', 'data_authoritative_test.go'),
+
 ]
 env = dict(os.environ, GOWORK='off', PLUTO_CORE_REQUIRE_DATABASE='1',
            PYTHONDONTWRITEBYTECODE='1')

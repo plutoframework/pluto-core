@@ -22,7 +22,7 @@ from pathlib import Path
 results = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
 expected = {'TestPostgresDispatchBinding', 'TestPostgresConcurrentReplay', 'TestPostgresOutboxRollback'}
 if os.environ.get('PLUTO_CORE_CANDIDATE_DATA') == '1':
-    expected |= {'TestPostgresAuthorizedScopedCache', 'TestPostgresVisiblePaginationAndBoundedExport', 'TestPostgresDeclaredAtomicDispatch', 'TestPostgresTypedDeliveryAfterCommit', 'TestPostgresConcurrentIdempotentDispatch'}
+    expected |= {'TestPostgresAuthorizedScopedCache', 'TestPostgresVisiblePaginationAndBoundedExport', 'TestPostgresDeclaredAtomicDispatch', 'TestPostgresTypedDeliveryAfterCommit', 'TestPostgresConcurrentIdempotentDispatch', 'TestPostgresAuthoritativeGuardFacts'}
 passed = {r.get('Test') for r in results if r.get('Action') == 'pass'}
 skipped = [r.get('Test') for r in results if r.get('Action') == 'skip' and r.get('Test')]
 if skipped or not expected <= passed:

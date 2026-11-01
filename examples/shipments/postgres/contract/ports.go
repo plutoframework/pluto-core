@@ -65,3 +65,13 @@ type ExportData interface {
 		shipments.ExportInput,
 	) ([]Summary, error)
 }
+
+// DisplayData exposes cached presentation facts separately from authoritative
+// lifecycle loading. Both still require current identity/resource authority.
+type DisplayData interface {
+	Display(
+		context.Context,
+		*identitygate.Execution,
+		string,
+	) (shipments.Snapshot, error)
+}

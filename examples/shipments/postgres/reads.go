@@ -61,12 +61,30 @@ func (d *Data) requireVisible(
 	return nil
 }
 
-// Load rechecks current gate and visibility even on a cache hit. Cached facts
-// are non-authoritative; every guard-relevant change must advance row version.
+// Load reads authoritative guard facts, without consulting the display cache.
 func (d *Data) Load(
 	ctx context.Context,
 	execution *identitygate.Execution,
 	id string,
+) (shipments.Snapshot, error) {
+	return d.load(ctx, execution, id, false)
+}
+
+// Display is an authorized, scoped cached read. Its facts are never used by
+// the transition operation; current visibility is still checked before each hit.
+func (d *Data) Display(
+	ctx context.Context,
+	execution *identitygate.Execution,
+	id string,
+) (shipments.Snapshot, error) {
+	return d.load(ctx, execution, id, true)
+}
+
+func (d *Data) load(
+	ctx context.Context,
+	execution *identitygate.Execution,
+	id string,
+	cached bool,
 ) (shipments.Snapshot, error) {
 	if d == nil || d.gate == nil || execution == nil {
 		return shipments.Snapshot{}, ErrDependencies
@@ -84,6 +102,14 @@ func (d *Data) Load(
 		execution.TenantID(),
 		id,
 		func(ctx context.Context) error {
+			if !cached {
+				var err error
+
+				value, err = d.readSnapshot(ctx, execution, id)
+
+				return err
+			}
+
 			if err := d.requireVisible(ctx, execution, id); err != nil {
 				return err
 			}
@@ -98,19 +124,7 @@ func (d *Data) Load(
 				key,
 				d.config.CacheTTL,
 				func(ctx context.Context) (shipments.Snapshot, error) {
-					record, err := db.New(d.pool).
-						ReadVisibleShipment(ctx, db.ReadVisibleShipmentParams{TenantID: execution.TenantID(), ID: id, SubjectID: execution.SubjectID()})
-					if err != nil {
-						return shipments.Snapshot{}, err
-					}
-
-					return shipments.Snapshot{
-						ID:              record.ID,
-						TenantID:        record.TenantID,
-						Status:          shipments.Status(record.Status),
-						Version:         record.Version,
-						AddressVerified: record.AddressVerified,
-					}, nil
+					return d.readSnapshot(ctx, execution, id)
 				},
 			)
 
@@ -121,7 +135,31 @@ func (d *Data) Load(
 		return shipments.Snapshot{}, err
 	}
 
+	if value.ID != id || value.TenantID != execution.TenantID() {
+		return shipments.Snapshot{}, ErrVisibility
+	}
+
 	return value, nil
+}
+
+func (d *Data) readSnapshot(
+	ctx context.Context,
+	execution *identitygate.Execution,
+	id string,
+) (shipments.Snapshot, error) {
+	record, err := db.New(d.pool).
+		ReadVisibleShipment(ctx, db.ReadVisibleShipmentParams{TenantID: execution.TenantID(), ID: id, SubjectID: execution.SubjectID()})
+	if err != nil {
+		return shipments.Snapshot{}, err
+	}
+
+	return shipments.Snapshot{
+		ID:              record.ID,
+		TenantID:        record.TenantID,
+		Status:          shipments.Status(record.Status),
+		Version:         record.Version,
+		AddressVerified: record.AddressVerified,
+	}, nil
 }
 
 // List applies current authorization and SQL row visibility before keyset LIMIT.

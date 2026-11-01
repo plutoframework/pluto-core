@@ -10,7 +10,7 @@ REQUIRED = {
 
 }
 if os.environ.get('PLUTO_CORE_CANDIDATE_DATA') == '1':
-    REQUIRED |= {'TestPostgresAuthorizedScopedCache', 'TestPostgresVisiblePaginationAndBoundedExport', 'TestPostgresDeclaredAtomicDispatch', 'TestPostgresTypedDeliveryAfterCommit', 'TestPostgresConcurrentIdempotentDispatch'}
+    REQUIRED |= {'TestPostgresAuthorizedScopedCache', 'TestPostgresVisiblePaginationAndBoundedExport', 'TestPostgresDeclaredAtomicDispatch', 'TestPostgresTypedDeliveryAfterCommit', 'TestPostgresConcurrentIdempotentDispatch', 'TestPostgresAuthoritativeGuardFacts'}
 
 
 def events(result):
