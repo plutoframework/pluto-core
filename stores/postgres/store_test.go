@@ -175,7 +175,9 @@ func TestPostgresConcurrentClaimsAndRetention(t *testing.T) {
 
 	if _, err := pool.Exec(
 		ctx,
-		"UPDATE pluto_idempotency SET expires_at=now()-interval '1 hour' WHERE id=$1",
+		"UPDATE pluto_idempotency SET "+
+			"expires_at=now()-interval '1 hour' "+
+			"WHERE id=$1",
 		claim.ID,
 	); err != nil {
 		t.Fatal(err)
@@ -286,7 +288,8 @@ func TestPostgresBusinessCompletionAtomicity(t *testing.T) {
 		}
 
 		var count int
-		if err := pool.QueryRow(ctx, "SELECT count(*) FROM business_writes WHERE id=$1", key).
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+
+			"business_writes WHERE id=$1", key).
 			Scan(&count); err != nil {
 			t.Fatal(err)
 		}

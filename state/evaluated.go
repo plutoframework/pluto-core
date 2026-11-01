@@ -20,7 +20,8 @@ type Binding[S ~string] struct {
 }
 
 // Evaluated carries a successful machine decision and its original snapshot.
-// Its zero value is invalid. Private fields prevent public literals from minting
+// Its zero value is invalid. Private fields prevent public literals from
+// minting
 // valid values. Machine.Validate checks the originating machine and binding.
 // This is not proof of authorization, persistence, or single use.
 type Evaluated[S ~string, E ~string] struct {

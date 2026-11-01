@@ -80,7 +80,9 @@ func New[S ~string, E ~string, F any](
 		_, duplicate := m.transitions[k]
 		if !fromKnown || !toKnown || transition.On == "" || duplicate {
 			return nil, fmt.Errorf(
-				"%w: transition %q + %q -> %q has undeclared states, an empty event, or a duplicate rule",
+				"%w: transition %q + %q -> %q has "+
+					"undeclared states, an empty event, "+
+					"or a duplicate rule",
 				ErrDefinition,
 				transition.From,
 				transition.On,
@@ -95,8 +97,10 @@ func New[S ~string, E ~string, F any](
 }
 
 // Next decides a transition without mutating the entity. Failure returns the
-// original state. A successful decision still needs an atomic persistence check.
-// It does not prove authorization and must not be cached as permission to write.
+// original state. A successful decision still needs an atomic persistence
+// check.
+// It does not prove authorization and must not be cached as permission to
+// write.
 func (m *Machine[S, E, F]) Next(current S, event E, facts F) (S, error) {
 	if m == nil || m.states == nil {
 		return current, ErrDefinition

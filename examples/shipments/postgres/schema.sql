@@ -8,7 +8,8 @@ CREATE TABLE shipments (
     PRIMARY KEY (tenant_id, id)
 );
 -- Durable dispatch intent doubles as this example's audit record. Delivery is
--- performed after commit by an independently authorized worker, not this writer.
+-- performed after commit by an independently authorized worker, not this
+-- writer.
 CREATE TABLE shipment_dispatch_outbox (
     tenant_id text NOT NULL,
     shipment_id text NOT NULL,

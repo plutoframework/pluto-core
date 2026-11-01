@@ -49,7 +49,11 @@ func (d *Data) requireVisible(
 	id string,
 ) error {
 	visible, err := db.New(d.pool).
-		MayViewShipment(ctx, db.MayViewShipmentParams{TenantID: execution.TenantID(), ShipmentID: id, SubjectID: execution.SubjectID()})
+		MayViewShipment(ctx, db.MayViewShipmentParams{
+			TenantID:   execution.TenantID(),
+			ShipmentID: id,
+			SubjectID:  execution.SubjectID(),
+		})
 	if err != nil {
 		return err
 	}
@@ -71,7 +75,8 @@ func (d *Data) Load(
 }
 
 // Display is an authorized, scoped cached read. Its facts are never used by
-// the transition operation; current visibility is still checked before each hit.
+// the transition operation; current visibility is still checked before each
+// hit.
 func (d *Data) Display(
 	ctx context.Context,
 	execution *identitygate.Execution,
@@ -148,7 +153,11 @@ func (d *Data) readSnapshot(
 	id string,
 ) (shipments.Snapshot, error) {
 	record, err := db.New(d.pool).
-		ReadVisibleShipment(ctx, db.ReadVisibleShipmentParams{TenantID: execution.TenantID(), ID: id, SubjectID: execution.SubjectID()})
+		ReadVisibleShipment(ctx, db.ReadVisibleShipmentParams{
+			TenantID:  execution.TenantID(),
+			ID:        id,
+			SubjectID: execution.SubjectID(),
+		})
 	if err != nil {
 		return shipments.Snapshot{}, err
 	}
@@ -162,8 +171,10 @@ func (d *Data) readSnapshot(
 	}, nil
 }
 
-// List applies current authorization and SQL row visibility before keyset LIMIT.
-// Its cursor binds current verified actor/tenant and the fixed visibility policy.
+// List applies current authorization and SQL row visibility before keyset
+// LIMIT.
+// Its cursor binds current verified actor/tenant and the fixed visibility
+// policy.
 func (d *Data) List(
 	ctx context.Context,
 	execution *identitygate.Execution,
@@ -204,7 +215,12 @@ func (d *Data) List(
 			}
 
 			rows, err := db.New(d.pool).
-				ListVisibleShipments(ctx, db.ListVisibleShipmentsParams{TenantID: execution.TenantID(), SubjectID: execution.SubjectID(), ID: request.After.ID, Limit: int32(request.FetchLimit())})
+				ListVisibleShipments(ctx, db.ListVisibleShipmentsParams{
+					TenantID:  execution.TenantID(),
+					SubjectID: execution.SubjectID(),
+					ID:        request.After.ID,
+					Limit:     int32(request.FetchLimit()),
+				})
 			if err != nil {
 				return err
 			}
@@ -224,7 +240,9 @@ func (d *Data) List(
 			page, err = pagination.Finish(
 				request,
 				values,
-				func(value ShipmentSummary) pagination.Key { return pagination.Key{ID: value.ID} },
+				func(value ShipmentSummary) pagination.Key {
+					return pagination.Key{ID: value.ID}
+				},
 			)
 
 			return err
@@ -235,7 +253,8 @@ func (d *Data) List(
 }
 
 // Export uses only the same visible bounded query as List, rechecking authority
-// each page. It refuses a truncated result rather than exporting unbounded rows.
+// each page. It refuses a truncated result rather than exporting unbounded
+// rows.
 func (d *Data) Export(
 	ctx context.Context,
 	execution *identitygate.Execution,

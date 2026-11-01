@@ -27,7 +27,8 @@ func isolated(t *testing.T) *pgxpool.Pool {
 	if url == "" {
 		if os.Getenv("PLUTO_CORE_REQUIRE_DATABASE") == "1" {
 			t.Fatal(
-				"required shipment SQL integration needs PLUTO_CORE_TEST_DATABASE_URL",
+				"required shipment SQL integration " +
+					"needs PLUTO_CORE_TEST_DATABASE_URL",
 			)
 		}
 
@@ -120,7 +121,9 @@ func seed(t *testing.T, pool *pgxpool.Pool, snapshot shipments.Snapshot) {
 
 	_, err := pool.Exec(
 		t.Context(),
-		"INSERT INTO shipments (tenant_id,id,status,version,address_verified) VALUES ($1,$2,$3,$4,$5)",
+		"INSERT INTO shipments "+
+			"(tenant_id,id,status,version,addres"+
+			"s_verified) VALUES ($1,$2,$3,$4,$5)",
 		snapshot.TenantID,
 		snapshot.ID,
 		string(snapshot.Status),
@@ -180,13 +183,18 @@ func assertRows(
 		gotStatus  string
 		gotVersion int64
 	)
-	if err := pool.QueryRow(t.Context(), "SELECT status, version FROM shipments WHERE tenant_id=$1 AND id=$2", snapshot.TenantID, snapshot.ID).
+	if err := pool.QueryRow(t.Context(), "SELECT status, version FROM "+
+		"shipments WHERE tenant_id=$1 AND "+
+		"id=$2", snapshot.TenantID, snapshot.ID).
 		Scan(&gotStatus, &gotVersion); err != nil {
 		t.Fatal(err)
 	}
 
 	var count int
-	if err := pool.QueryRow(t.Context(), "SELECT count(*) FROM shipment_dispatch_outbox").
+	if err := pool.QueryRow(
+		t.Context(),
+		"SELECT count(*) FROM shipment_dispatch_outbox",
+	).
 		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +211,15 @@ func assertRows(
 }
 
 func TestPostgresDispatchBinding(t *testing.T) {
-	for _, name := range []string{"zero", "foreign-machine", "scope", "entity", "state", "version", "valid"} {
+	for _, name := range []string{
+		"zero",
+		"foreign-machine",
+		"scope",
+		"entity",
+		"state",
+		"version",
+		"valid",
+	} {
 		t.Run(name, func(t *testing.T) {
 			pool := isolated(t)
 			machine := owningMachine(t)
@@ -337,7 +353,10 @@ func TestPostgresOutboxRollback(t *testing.T) {
 
 	if _, err := pool.Exec(
 		t.Context(),
-		"ALTER TABLE shipment_dispatch_outbox ADD CONSTRAINT injected_failure CHECK (false) NOT VALID",
+		"ALTER TABLE "+
+			"shipment_dispatch_outbox ADD "+
+			"CONSTRAINT injected_failure CHECK "+
+			"(false) NOT VALID",
 	); err != nil {
 		t.Fatal(err)
 	}

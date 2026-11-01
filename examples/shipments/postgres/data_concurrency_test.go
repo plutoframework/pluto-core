@@ -44,7 +44,10 @@ func TestPostgresConcurrentIdempotentDispatch(t *testing.T) {
 				t,
 				"alice",
 				snapshot.ID,
-				func(ctx context.Context, execution *identitygate.Execution) error {
+				func(
+					ctx context.Context,
+					execution *identitygate.Execution,
+				) error {
 					var err error
 
 					result, err = operations.Dispatch(
@@ -94,7 +97,10 @@ func TestPostgresConcurrentIdempotentDispatch(t *testing.T) {
 	assertRows(t, pool, snapshot, shipments.Dispatched, 8, 1)
 
 	var actor string
-	if err := pool.QueryRow(t.Context(), "SELECT actor_id FROM shipment_dispatch_outbox").
+	if err := pool.QueryRow(
+		t.Context(),
+		"SELECT actor_id FROM shipment_dispatch_outbox",
+	).
 		Scan(&actor); err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +115,8 @@ func TestPostgresConcurrentIdempotentDispatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := pool.QueryRow(t.Context(), "SELECT count(*) FROM pluto_idempotency WHERE completed").
+	if err := pool.QueryRow(t.Context(), "SELECT count(*) FROM "+
+		"pluto_idempotency WHERE completed").
 		Scan(&claims); err != nil {
 		t.Fatal(err)
 	}

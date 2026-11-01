@@ -12,7 +12,8 @@ import (
 const commitDispatch = `-- name: CommitDispatch :execrows
 UPDATE shipments SET status = $1, version = version + 1
 WHERE tenant_id = $2 AND id = $3
-  AND status = $4 AND version = $5
+  AND status = $4
+  AND version = $5
 `
 
 type CommitDispatchParams struct {
@@ -40,7 +41,8 @@ func (q *Queries) CommitDispatch(ctx context.Context, arg CommitDispatchParams) 
 const commitVisibleDispatch = `-- name: CommitVisibleDispatch :execrows
 UPDATE shipments s SET status = $1, version = version + 1
 WHERE s.tenant_id = $2 AND s.id = $3
- AND s.status = $4 AND s.version = $5
+ AND s.status = $4
+ AND s.version = $5
  AND EXISTS (SELECT 1 FROM shipment_visibility v
  WHERE v.tenant_id=s.tenant_id AND v.shipment_id=s.id
  AND v.subject_id=$6)
@@ -71,7 +73,8 @@ func (q *Queries) CommitVisibleDispatch(ctx context.Context, arg CommitVisibleDi
 }
 
 const insertAuthorizedDispatchAudit = `-- name: InsertAuthorizedDispatchAudit :exec
-INSERT INTO shipment_dispatch_outbox (tenant_id, shipment_id, version, event, actor_id)
+INSERT INTO shipment_dispatch_outbox
+ (tenant_id, shipment_id, version, event, actor_id)
 VALUES ($1, $2, $3, $4, $5)
 `
 
@@ -180,7 +183,8 @@ func (q *Queries) MayViewShipment(ctx context.Context, arg MayViewShipmentParams
 }
 
 const readVisibleShipment = `-- name: ReadVisibleShipment :one
-SELECT s.id, s.tenant_id, s.status, s.version, s.address_verified FROM shipments s
+SELECT s.id, s.tenant_id, s.status, s.version, s.address_verified
+FROM shipments s
 JOIN shipment_visibility v ON v.tenant_id=s.tenant_id AND v.shipment_id=s.id
 WHERE s.tenant_id=$1 AND s.id=$2 AND v.subject_id=$3
 `

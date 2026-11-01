@@ -114,7 +114,8 @@ func NewData(
 }
 
 // DispatchAttempt carries a claimed logical command, bound to this adapter,
-// verified actor/tenant and normalized input. It has no public valid constructor.
+// verified actor/tenant and normalized input. It has no public valid
+// constructor.
 // Copies share the same durable claim; only SQL determines commit/replay.
 type dispatchAttempt struct {
 	owner   *Data
@@ -137,7 +138,8 @@ func (a *dispatchAttempt) Replayed() (DispatchResult, bool) {
 // StartDispatch is required before loading/evaluating the lifecycle, so a retry
 // can replay a committed result after the entity has already changed state.
 // Authorization and current resource visibility precede even a replay. Any
-// subsequent failure leaves a pending claim requiring deliberate reconciliation.
+// subsequent failure leaves a pending claim requiring deliberate
+// reconciliation.
 func (d *Data) StartDispatch(
 	ctx context.Context,
 	execution *identitygate.Execution,
@@ -238,7 +240,8 @@ func (d *Data) StartDispatch(
 }
 
 // CommitDispatch atomically commits the fixed shipment mutation, its audit,
-// typed Jobs outbox request and idempotency completion. It owns the transaction;
+// typed Jobs outbox request and idempotency completion. It owns the
+// transaction;
 // it never runs a caller-provided SQL or external-effect callback inside it.
 func (d *Data) CommitDispatch(
 	ctx context.Context,
@@ -380,7 +383,8 @@ func (d *Data) CommitDispatch(
 		return DispatchResult{}, err
 	}
 
-	// Cache is non-authoritative and bounded by TTL. Invalidation failure cannot
+	// Cache is non-authoritative and bounded by TTL. Invalidation failure
+	// cannot
 	// undo a committed transaction or turn it into permission to write again.
 	if key, err := d.snapshotKey(execution, attempt.input.ID()); err == nil {
 		_ = d.cache.Delete(ctx, key)

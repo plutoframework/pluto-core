@@ -23,8 +23,12 @@ jobs:
       - uses: jdx/mise-action@v3
       - name: Start isolated cache servers
         run: |
-          docker run -d --name pluto-ci-valkey -p 127.0.0.1:6380:6379 valkey/valkey:9.1.3-alpine valkey-server --save '' --appendonly no --requirepass synthetic_only
-          docker run -d --name pluto-ci-redis -p 127.0.0.1:6381:6379 redis:8.10.3-alpine redis-server --save '' --appendonly no --requirepass synthetic_only
+          docker run -d --name pluto-ci-valkey -p 127.0.0.1:6380:6379 \
+            valkey/valkey:9.1.3-alpine valkey-server --save '' \
+            --appendonly no --requirepass synthetic_only
+          docker run -d --name pluto-ci-redis -p 127.0.0.1:6381:6379 \
+            redis:8.10.3-alpine redis-server --save '' \
+            --appendonly no --requirepass synthetic_only
       - run: ./scripts/check.sh
       - run: ./scripts/test.sh -race
       - run: ./scripts/fuzz.sh

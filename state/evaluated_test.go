@@ -23,7 +23,8 @@ func (w *boundedWriter) Commit(change state.Evaluated[string, string]) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// A real adapter must implement this comparison and update atomically in SQL.
+	// A real adapter must implement this comparison and update atomically in
+	// SQL.
 	if err := w.machine.Validate(change, w.current); err != nil {
 		return err
 	}
@@ -124,7 +125,10 @@ func TestEvaluatedRestrictedWrite(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var writer lifecycleWriter = &boundedWriter{machine: machine, current: tc.current}
+			var writer lifecycleWriter = &boundedWriter{
+				machine: machine,
+				current: tc.current,
+			}
 			if err := writer.Commit(
 				change,
 			); !errors.Is(
@@ -157,7 +161,8 @@ func TestEvaluatedRestrictedWrite(t *testing.T) {
 		t.Fatalf("foreign: %v", err)
 	}
 
-	// Two callers can copy a decision. The persistence comparison rejects replay.
+	// Two callers can copy a decision. The persistence comparison rejects
+	// replay.
 	var wg sync.WaitGroup
 
 	results := make(chan error, 2)
@@ -209,7 +214,22 @@ func TestEvaluateFailures(t *testing.T) {
 		t.Fatalf("failed evidence: %v", err)
 	}
 
-	for _, invalid := range []state.Binding[string]{{Entity: "id", State: "pending"}, {Scope: "tenant", State: "pending"}, {Scope: "tenant", Entity: "id", State: "pending", Version: -1}} {
+	for _, invalid := range []state.Binding[string]{
+		{
+			Entity: "id",
+			State:  "pending",
+		},
+		{
+			Scope: "tenant",
+			State: "pending",
+		},
+		{
+			Scope:   "tenant",
+			Entity:  "id",
+			State:   "pending",
+			Version: -1,
+		},
+	} {
 		if _, err := machine.Evaluate(
 			invalid,
 			"finish",

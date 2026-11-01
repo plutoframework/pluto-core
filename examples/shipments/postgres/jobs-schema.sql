@@ -1,4 +1,5 @@
--- Caller-owned migration. Apply once through your migration system, never startup.
+-- Caller-owned migration. Apply once through your migration system, never
+-- startup.
 CREATE TABLE pluto_jobs (
     id text PRIMARY KEY CHECK (id ~ '^[0-9a-f]{32}$'),
     kind text NOT NULL CHECK (length(kind) BETWEEN 1 AND 128),

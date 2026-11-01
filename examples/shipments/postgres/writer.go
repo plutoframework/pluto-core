@@ -27,7 +27,8 @@ var (
 	ErrDispatch     = errors.New("invalid shipment dispatch decision")
 )
 
-// Writer has no API accepting a replacement entity or freely constructed change.
+// Writer has no API accepting a replacement entity or freely constructed
+// change.
 // Composition injects the same owning domain machine used by the operation.
 // The pool is private and the writer owns its transaction, SQL CAS and outbox.
 type Writer struct {
@@ -49,7 +50,8 @@ func New(
 }
 
 // CommitDispatch validates the evaluated decision before any database access.
-// SQL atomically matches scope, identity, source state and expected version; the
+// SQL atomically matches scope, identity, source state and expected version;
+// the
 // status/version update and durable delivery/audit intent commit together.
 // It does not establish current authorization, run delivery, or re-run guards.
 func (w *Writer) CommitDispatch(
@@ -79,7 +81,8 @@ func (w *Writer) CommitDispatch(
 
 	defer func() {
 
-		// Cleanup must still roll back when the caller's context has been canceled.
+		// Cleanup must still roll back when the caller's context has been
+		// canceled.
 		cleanup, cancel := context.WithTimeout(
 			context.Background(),
 			5*time.Second,

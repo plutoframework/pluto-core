@@ -42,7 +42,8 @@ The additive `Binding`, `Evaluated`, `Machine.Evaluate` and `Machine.Validate`
 APIs are local, unpublished work; they are not available in v0.4.0.
 `Next` and existing consumers remain compatible. See `evaluated_test.go` for a
 consumer-owned restricted write port and an atomic in-memory comparison fixture.
-`examples/shipments` demonstrates an additive domain/operation write contract; the
+`examples/shipments` demonstrates an additive domain/operation write contract;
+the
 existing purchase example retains its compatible `Next` API.
 
 ```go
@@ -55,10 +56,13 @@ change, err := lifecycle.Evaluate(snapshot, Approve, facts)
 
 The adapter must call `lifecycle.Validate(change, currentSnapshot)` using the
 same machine instance injected into the domain evaluation path. An independently
-constructed machine, even with identical definitions, is rejected. Private fields
-prevent external callers from constructing valid tokens by composite literal. Zero tokens and failed evaluations are invalid. The binding
+constructed machine, even with identical definitions, is rejected. Private
+fields
+prevent external callers from constructing valid tokens by composite literal.
+Zero tokens and failed evaluations are invalid. The binding
 includes scope, entity ID, source state and nonnegative expected version;
-`Binding()`, `Event()` and `To()` return copies for a validated adapter's SQL and
+`Binding()` , `Event()` and `To()` return copies for a validated adapter's SQL
+and
 audit work. Scope and entity must be nonempty; single-tenant applications must
 choose a stable explicit scope such as `single-tenant`.
 
@@ -66,14 +70,16 @@ The write port must accept the evaluated token instead of a publicly mutable
 replacement record. Its database transaction must atomically compare all binding
 fields, update the version, and write required audit/outbox work. A prior
 `Validate` against a loaded record alone is insufficient. The concurrent fixture
-shows this comparison contract in memory, not a database guarantee. Tokens may be
+shows this comparison contract in memory, not a database guarantee. Tokens may
+be
 copied and replayed; they are neither consumed nor expired. Machine provenance
 is not current authorization, and guards are not rerun by validation. Private
 entity state, controlled initial construction/rehydration and enforced consumer
 adoption remain application and tooling responsibilities.
 
 For concrete PostgreSQL CAS and transactional outbox proof, see the unpublished
-nested consumer module `examples/shipments/postgres`. Its strict database command
+nested consumer module `examples/shipments/postgres` . Its strict database
+command
 requires real execution and rejects missing or skipped required cases. This is
 one adopted application write path, not automatic enforcement for every Core
 consumer or a generic ORM.

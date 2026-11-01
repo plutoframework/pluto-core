@@ -5,8 +5,10 @@ For an atomic operation use the lower-level claim primitives in a thin transport
 or application adapter. Keep the domain operation free of HTTP/pgx dependencies.
 
 ```go
-// Auth, current permission/feature checks, trusted tenant resolution and bounded
-// request fingerprinting precede this block. Claim scope uses verified identity.
+// Auth, current permission/feature checks, trusted tenant resolution and
+// bounded
+// request fingerprinting precede this block. Claim scope uses verified
+// identity.
 replay, err := durable.Begin(
 	ctx,
 	claim,
@@ -25,7 +27,8 @@ if err != nil {
 defer tx.Rollback(context.Background())
 
 // Use typed app sqlc queries bound to this SAME tx; preserve tenant predicates.
-// Insert the business write and its audit. Construct bounded JSON response bytes.
+// Insert the business write and its audit. Construct bounded JSON response
+// bytes.
 response, err := mutateAndAudit(
 	ctx,
 	appQueries.WithTx(tx),
@@ -48,11 +51,13 @@ if err := tx.Commit(ctx); err != nil {
 return writeReplay(&response)
 ```
 
-A rollback leaves neither mutation nor recorded completion, while the independent
+A rollback leaves neither mutation nor recorded completion, while the
+independent
 claim remains pending. An operator can verify rollback before releasing it. A
 commit publishes mutation, audit and completion together, so a retry can replay.
 Never complete using the pool while the business tx is uncommitted. Never place
-an external side effect in a transaction and infer rollback undid it. Integration
+an external side effect in a transaction and infer rollback undid it.
+Integration
 tests in `stores/postgres` exercise this pattern with real PostgreSQL.
 
 ## Evaluated lifecycle writes (unpublished reference consumer)
@@ -72,7 +77,8 @@ existing PostgreSQL adapter and the reference consumer. The consumer's strict
 skipped or absent required SQL cases. Its local Core replacement is intentional
 unpublished development wiring, not release-pin compatibility evidence.
 
-The checked-in Core workflow also invokes that strict disposable database command
+The checked-in Core workflow also invokes that strict disposable database
+command
 with SQL mutations enabled. This is workflow wiring, not verification of hosted
 branch protection or a claim that a remote CI run has executed. Ordinary local
 checks can still skip SQL when no database URL is configured; strict evidence

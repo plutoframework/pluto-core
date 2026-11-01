@@ -30,7 +30,9 @@ import (
 
 type forgedAttempt struct{}
 
-func (forgedAttempt) Replayed() (contract.Result, bool) { return contract.Result{}, false }
+func (forgedAttempt) Replayed() (contract.Result, bool) {
+	return contract.Result{}, false
+}
 
 type observedCache struct {
 	cache.Store
@@ -221,7 +223,9 @@ func grant(t *testing.T, pool *pgxpool.Pool, id, actor string) {
 
 	if _, err := pool.Exec(
 		t.Context(),
-		"INSERT INTO shipment_visibility (tenant_id,shipment_id,subject_id) VALUES ('tenant-a',$1,$2)",
+		"INSERT INTO shipment_visibility "+
+			"(tenant_id,shipment_id,subject_id) "+
+			"VALUES ('tenant-a',$1,$2)",
 		id,
 		actor,
 	); err != nil {
@@ -516,7 +520,13 @@ func TestPostgresVisiblePaginationAndBoundedExport(t *testing.T) {
 }
 
 func TestPostgresDeclaredAtomicDispatch(t *testing.T) {
-	for _, failure := range []string{"none", "audit", "delivery", "completion", "commit"} {
+	for _, failure := range []string{
+		"none",
+		"audit",
+		"delivery",
+		"completion",
+		"commit",
+	} {
 		t.Run(failure, func(t *testing.T) {
 			pool := isolated(t)
 			f := newDataFixture(t, pool)
@@ -541,7 +551,10 @@ func TestPostgresDeclaredAtomicDispatch(t *testing.T) {
 				t,
 				"alice",
 				input.ID(),
-				func(ctx context.Context, execution *identitygate.Execution) error {
+				func(
+					ctx context.Context,
+					execution *identitygate.Execution,
+				) error {
 					var err error
 
 					attempt, err = f.data.StartDispatch(ctx, execution, input)
@@ -588,23 +601,35 @@ func TestPostgresDeclaredAtomicDispatch(t *testing.T) {
 					case "audit":
 						_, err = pool.Exec(
 							ctx,
-							"ALTER TABLE shipment_dispatch_outbox ADD CONSTRAINT injected_failure CHECK(false) NOT VALID",
+							"ALTER TABLE "+
+								"shipment_dispatch_outbox ADD "+
+								"CONSTRAINT injected_failure "+
+								"CHECK(false) NOT VALID",
 						)
 					case "delivery":
 						_, err = pool.Exec(
 							ctx,
-							"ALTER TABLE pluto_jobs ADD CONSTRAINT injected_failure CHECK(false) NOT VALID",
+							"ALTER TABLE pluto_jobs ADD "+
+								"CONSTRAINT injected_failure "+
+								"CHECK(false) NOT VALID",
 						)
 					case "commit":
 						_, err = pool.Exec(
 							ctx,
-							`CREATE FUNCTION injected_commit_failure() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected commit failure'; END$$;
- CREATE CONSTRAINT TRIGGER injected_commit_failure AFTER UPDATE ON shipments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION injected_commit_failure()`,
+							`CREATE FUNCTION injected_commit_failure()
+ RETURNS trigger
+ LANGUAGE plpgsql AS $$BEGIN
+ RAISE EXCEPTION 'injected commit failure'; END$$;
+ CREATE CONSTRAINT TRIGGER injected_commit_failure
+ AFTER UPDATE ON shipments DEFERRABLE INITIALLY DEFERRED
+ FOR EACH ROW EXECUTE FUNCTION injected_commit_failure()`,
 						)
 					case "completion":
 						_, err = pool.Exec(
 							ctx,
-							"ALTER TABLE pluto_idempotency ADD CONSTRAINT injected_failure CHECK(NOT completed) NOT VALID",
+							"ALTER TABLE pluto_idempotency ADD "+
+								"CONSTRAINT injected_failure "+
+								"CHECK(NOT completed) NOT VALID",
 						)
 					}
 
@@ -628,19 +653,24 @@ func TestPostgresDeclaredAtomicDispatch(t *testing.T) {
 						assertRows(t, pool, snapshot, shipments.Packed, 7, 0)
 
 						var jobs, completed int
-						if err := pool.QueryRow(ctx, "SELECT count(*) FROM pluto_jobs").
+						if err := pool.QueryRow(
+							ctx,
+							"SELECT count(*) FROM pluto_jobs",
+						).
 							Scan(&jobs); err != nil {
 							return err
 						}
 
-						if err := pool.QueryRow(ctx, "SELECT count(*) FROM pluto_idempotency WHERE completed").
+						if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+
+							"pluto_idempotency WHERE completed").
 							Scan(&completed); err != nil {
 							return err
 						}
 
 						if jobs != 0 || completed != 0 {
 							return fmt.Errorf(
-								"partial transaction committed jobs=%d completed=%d",
+								"partial transaction committed "+
+									"jobs=%d completed=%d",
 								jobs,
 								completed,
 							)

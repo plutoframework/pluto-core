@@ -63,15 +63,21 @@ func TestPostgresTypedDeliveryAfterCommit(t *testing.T) {
 	var calls atomic.Int32
 
 	handler, err := effect.Bind(
-		func(ctx context.Context, delivery jobs.Delivery, payload shipmentpostgres.DispatchNotice) error {
+		func(
+			ctx context.Context,
+			delivery jobs.Delivery,
+			payload shipmentpostgres.DispatchNotice,
+		) error {
 			if delivery.ID != committed.JobID || delivery.TenantID == nil ||
 				*delivery.TenantID != "tenant-a" ||
 				payload.ShipmentID != snapshot.ID {
 				return jobs.Permanent(jobs.ErrInvalid)
 			}
 
-			// A composition-owned worker identity is verified anew. Stored tenant/job
-			// metadata never substitutes for the current operation's authorization.
+			// A composition-owned worker identity is verified anew. Stored
+			// tenant/job
+			// metadata never substitutes for the current operation's
+			// authorization.
 			return f.manager.WithIdentity(
 				ctx,
 				f.tokens["alice"],
@@ -81,7 +87,10 @@ func TestPostgresTypedDeliveryAfterCommit(t *testing.T) {
 						identity,
 						"tenant-a",
 						payload.ShipmentID,
-						func(ctx context.Context, execution *identitygate.Execution) error {
+						func(
+							ctx context.Context,
+							execution *identitygate.Execution,
+						) error {
 							return f.gate.Use(
 								ctx,
 								execution,
@@ -143,7 +152,11 @@ func TestPostgresTypedDeliveryAfterCommit(t *testing.T) {
 
 	for {
 		var state string
-		if err := pool.QueryRow(t.Context(), "SELECT state FROM pluto_jobs WHERE id=$1", committed.JobID).
+		if err := pool.QueryRow(
+			t.Context(),
+			"SELECT state FROM pluto_jobs WHERE id=$1",
+			committed.JobID,
+		).
 			Scan(&state); err != nil {
 			t.Fatal(err)
 		}

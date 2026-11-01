@@ -9,7 +9,8 @@ import (
 	"testing"
 )
 
-// A separate module proves package privacy through the actual consumer compiler.
+// A separate module proves package privacy through the actual consumer
+// compiler.
 // A positive control ensures missing imports/toolchain problems cannot count as
 // rejection of a forged token.
 func TestEvaluatedCannotBeMintedByConsumer(t *testing.T) {
@@ -20,7 +21,12 @@ func TestEvaluatedCannotBeMintedByConsumer(t *testing.T) {
 
 	consumer := t.TempDir()
 
-	module := "module consumer\n\ngo 1.25.5\n\nrequire github.com/plutoframework/pluto-core v0.0.0\n\nreplace github.com/plutoframework/pluto-core => " + strconv.Quote(
+	module := "module consumer\n\ngo " +
+		"1.25.5\n\nrequire " +
+		"github.com/plutoframework/pluto-cor" +
+		"e v0.0.0\n\nreplace " +
+		"github.com/plutoframework/pluto-cor" +
+		"e => " + strconv.Quote(
 		root,
 	) + "\n"
 	if err := os.WriteFile(
@@ -47,7 +53,9 @@ func TestEvaluatedCannotBeMintedByConsumer(t *testing.T) {
 		return command.CombinedOutput()
 	}
 
-	prefix := "package consumer\nimport \"github.com/plutoframework/pluto-core/state\"\n"
+	prefix := "package consumer\nimport " +
+		"\"github.com/plutoframework/pluto-co" +
+		"re/state\"\n"
 	if output, err := run(
 		prefix + "var _ = state.Evaluated[string,string]{}\n",
 	); err != nil {
