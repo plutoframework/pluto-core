@@ -27,9 +27,9 @@ jobs:
           gh repo clone plutoframework/pluto-auth ../pluto-auth
           git -C ../pluto-auth checkout bad3f1a8b9839797b99e64ed1523ba8c9e21853a
           gh repo clone plutoframework/pluto-rbac ../pluto-rbac
-          git -C ../pluto-rbac checkout bf5b45317d9a651aea24304f6b92940e08ad8bb0
+          git -C ../pluto-rbac checkout 84ed4e943ff871f34dc1c143186c0c39a7c614bf
           gh repo clone plutoframework/pluto-jobs ../pluto-jobs
-          git -C ../pluto-jobs checkout 8302d3cc16eb9d9fe5b1a961d0038c76eeedd043
+          git -C ../pluto-jobs checkout f0ded6880c19b258bb9d747764b161a7f6e2d1ff
       - uses: jdx/mise-action@v3
       - name: Start isolated cache servers
         run: |
