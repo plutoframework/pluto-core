@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/jackc/pgx/v5 v5.11.0
-	github.com/plutoframework/pluto-auth v0.0.0
+	github.com/plutoframework/pluto-auth v0.4.1-0.20261101183409-cb5554622172
 	github.com/plutoframework/pluto-core v0.1.0
 	github.com/plutoframework/pluto-rbac v0.0.0
 )
@@ -17,8 +17,8 @@ require (
 	github.com/plutoframework/pluto-jobs v0.1.1
 	github.com/plutoframework/pluto-jobs/stores/postgres v0.1.0
 	github.com/plutoframework/pluto-rbac/identity v0.0.0
-	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 )
 
 // Unpublished candidate reference consumer; not a release dependency.
