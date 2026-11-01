@@ -51,7 +51,12 @@ rollback when outbox insertion fails. Run
 `PLUTO_CORE_SQL_MUTATION=1 scripts/postgres-check.sh` from the Core root for six
 real-SQL mutations covering each CAS predicate, using the pool outside the
 transaction, and omitting commit. Build failures, timeouts and missing databases
-fail the mutation command rather than count as killed mutations.
+fail the mutation command rather than count as killed mutations. Each mutant runs
+only its exact relevant test/subtest and must emit its intended business
+assertion, with no unrelated failure output. Pristine real-SQL controls run before
+and after the mutations. The evidence classifier runs self-tests rejecting
+connection/setup errors, SQL errors, build failures, timeouts, absent cases and
+wrong assertions before using the database.
 `TestRequiredDatabaseGate` proves the
 strict command rejects a missing URL.
 
