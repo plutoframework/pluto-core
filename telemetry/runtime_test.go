@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -212,6 +213,47 @@ func TestOTLPHTTPExports(t *testing.T) {
 
 	if traces != 1 || metrics < 1 {
 		t.Fatalf("actual exports traces=%d metrics=%d", traces, metrics)
+	}
+}
+
+func TestOTLPHTTPExplicitEndpointPath(t *testing.T) {
+	var requests atomic.Int32
+
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if req.URL.Path != "/collector" {
+				t.Errorf("explicit endpoint path changed: %s", req.URL.Path)
+			}
+
+			_, _ = io.Copy(io.Discard, req.Body)
+
+			requests.Add(1)
+			w.Header().Set("Content-Type", "application/x-protobuf")
+			w.WriteHeader(http.StatusOK)
+		}),
+	)
+	defer server.Close()
+
+	r, err := New(context.Background(), Config{
+		Enabled: true, Service: "smoke", SampleRatio: 1,
+		Endpoint: server.URL + "/collector",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, done := r.Operation(context.Background(), "cache", "get")
+	done(nil)
+
+	if err := r.Shutdown(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if requests.Load() < 2 {
+		t.Fatalf(
+			"expected both signals at explicit endpoint, got %d requests",
+			requests.Load(),
+		)
 	}
 }
 

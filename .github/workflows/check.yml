@@ -12,7 +12,7 @@ jobs:
           POSTGRES_DB: pluto_demo
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U pluto_demo"
+          --health-cmd "pg_isready -h 127.0.0.1 -U pluto_demo"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       PLUTO_CORE_REQUIRE_DATABASE: "1"
@@ -20,6 +20,16 @@ jobs:
       PLUTO_CORE_CACHE_TEST_URLS: redis://:synthetic_only@127.0.0.1:6380,redis://:synthetic_only@127.0.0.1:6381
     steps:
       - uses: actions/checkout@v4
+      - name: Check out pinned candidate companions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh repo clone plutoframework/pluto-auth ../pluto-auth
+          git -C ../pluto-auth checkout bad3f1a8b9839797b99e64ed1523ba8c9e21853a
+          gh repo clone plutoframework/pluto-rbac ../pluto-rbac
+          git -C ../pluto-rbac checkout bf5b45317d9a651aea24304f6b92940e08ad8bb0
+          gh repo clone plutoframework/pluto-jobs ../pluto-jobs
+          git -C ../pluto-jobs checkout 8302d3cc16eb9d9fe5b1a961d0038c76eeedd043
       - uses: jdx/mise-action@v3
       - name: Start isolated cache servers
         run: |

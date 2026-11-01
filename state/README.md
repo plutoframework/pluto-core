@@ -83,3 +83,9 @@ command
 requires real execution and rejects missing or skipped required cases. This is
 one adopted application write path, not automatic enforcement for every Core
 consumer or a generic ORM.
+
+Product documentation for this unpublished contract is maintained in the
+[architecture companion](https://github.com/plutoframework/pluto-site/pull/5).
+Every guard-relevant mutation must advance the persisted version. Validate
+checks the evaluated snapshot and machine; authorization and atomic database
+comparison remain the consumer's responsibility.
