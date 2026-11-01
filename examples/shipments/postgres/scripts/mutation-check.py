@@ -10,6 +10,7 @@ import tempfile
 
 sys.dont_write_bytecode = True
 
+from mutation_dependencies import prepare
 from mutation_evidence import killed, pristine
 
 script_dir = Path(__file__).resolve().parent
@@ -22,7 +23,7 @@ subprocess.run(
         "-s",
         str(script_dir),
         "-p",
-        "test_mutation_evidence.py",
+        "test_mutation_*.py",
     ],
     check=True,
     env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
@@ -200,6 +201,7 @@ def positive_control(phase):
     print(f"PRISTINE SQL control passed {phase} mutations", flush=True)
 
 
+prepare(root / consumer, env)
 positive_control("before")
 
 for mutation in mutations:

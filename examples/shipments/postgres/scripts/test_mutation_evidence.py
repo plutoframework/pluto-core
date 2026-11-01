@@ -48,6 +48,7 @@ class EvidenceTests(unittest.TestCase):
     def test_build_timeout_missing_or_unrelated_failure_is_not_kill(self):
         cases = [
             result(failure(), stderr="[build failed]"),
+            result(failure(), stderr="go: downloading example.test/mod v1.0.0"),
             result(failure(), code=0),
             result(failure(), code=2),
             result([]),
