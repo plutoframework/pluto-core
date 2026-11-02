@@ -26,10 +26,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh repo clone plutoframework/pluto-auth ../pluto-auth
+          git -C ../pluto-auth fetch origin cb55546221727f16a00f88cc24543b380dab5813
           git -C ../pluto-auth checkout cb55546221727f16a00f88cc24543b380dab5813
           gh repo clone plutoframework/pluto-rbac ../pluto-rbac
+          git -C ../pluto-rbac fetch origin eeb03e6a3d52d1e6181d4db2fab5674d44044623
           git -C ../pluto-rbac checkout eeb03e6a3d52d1e6181d4db2fab5674d44044623
           gh repo clone plutoframework/pluto-jobs ../pluto-jobs
+          git -C ../pluto-jobs fetch origin f0ded6880c19b258bb9d747764b161a7f6e2d1ff
           git -C ../pluto-jobs checkout f0ded6880c19b258bb9d747764b161a7f6e2d1ff
       - uses: jdx/mise-action@v3
       - name: Start isolated cache servers
