@@ -5,6 +5,9 @@ go run ./scripts/commentspacing -formatter "$PWD/scripts/golangci.sh" .
 root="$PWD"
 export GOWORK=off
 
+python3 -m unittest discover -s scripts -p test_doc_examples.py
+python3 scripts/doc_examples.py
+
 python3 - <<'PYTHON'
 from pathlib import Path
 

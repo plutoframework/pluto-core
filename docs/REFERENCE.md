@@ -152,8 +152,7 @@ import (
 )
 
 // Authorize checks current identity, permissions, flag and resource access.
-// Its returned scope contains verified subject/tenant and a stable operation
-// ID.
+// Its returned scope contains verified subject/tenant and a stable operation ID.
 type Authorize func(*http.Request) (idempotency.Scope, error)
 
 func New(
@@ -253,10 +252,8 @@ func New(store cache.Store, repo Repository) (*Catalog, error) {
 	return &Catalog{loader: loader, repo: repo}, nil
 }
 
-// Get follows authentication and current resource authorization in the
-// operation.
-// Scope comes from verified application context, never arbitrary client
-// headers.
+// Get follows authentication and current resource authorization in the operation.
+// Scope comes from verified application context, never arbitrary client headers.
 func (catalog *Catalog) Get(
 	ctx context.Context,
 	scope cache.Scope,
