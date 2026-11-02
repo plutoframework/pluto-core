@@ -300,8 +300,22 @@ func TestCanceledHTTP(t *testing.T) {
 	r, ex, _ := testRuntime(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	r.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(204) })).
-		ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/secret", nil).WithContext(ctx))
+	r.Middleware(http.HandlerFunc(func(
+		w http.ResponseWriter,
+		_ *http.Request,
+	) {
+		w.WriteHeader(204)
+	})).
+		ServeHTTP(
+			httptest.NewRecorder(),
+			httptest.NewRequest(
+				"GET",
+				"/secret",
+				nil,
+			).WithContext(
+				ctx,
+			),
+		)
 
 	_ = r.tp.ForceFlush(context.Background())
 

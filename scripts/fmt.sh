@@ -4,10 +4,16 @@ cd "$(dirname "$0")/.."
 root="$PWD"
 export GOWORK=off
 
-for module in . stores/postgres stores/valkey telemetry; do
+for module in . stores/postgres stores/valkey telemetry \
+  examples/shipments/postgres; do
   cd "$root/$module"
   "$root/scripts/golangci.sh" fmt ./...
-  "$root/scripts/golangci.sh" run --enable-only wsl_v5 --fix ./...
+  if [[ "${PLUTO_CORE_CANDIDATE_DATA:-0}" == "1" ]]; then
+    "$root/scripts/golangci.sh" run --build-tags plutocandidate \
+    --enable-only wsl_v5 --fix ./...
+  else
+    "$root/scripts/golangci.sh" run --enable-only wsl_v5 --fix ./...
+  fi
   "$root/scripts/golangci.sh" fmt ./...
 done
 

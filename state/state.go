@@ -38,6 +38,7 @@ type key[S ~string, E ~string] struct {
 // Machine holds a compiled definition, not the current state of an entity.
 // Its maps are immutable. Guards must be safe for concurrent evaluation.
 type Machine[S ~string, E ~string, F any] struct {
+	identity    *byte
 	states      map[S]struct{}
 	transitions map[key[S, E]]Transition[S, E, F]
 }
@@ -55,6 +56,7 @@ func New[S ~string, E ~string, F any](
 	}
 
 	m := &Machine[S, E, F]{
+		identity:    new(byte),
 		states:      make(map[S]struct{}, len(d.States)),
 		transitions: make(map[key[S, E]]Transition[S, E, F]),
 	}
@@ -78,7 +80,9 @@ func New[S ~string, E ~string, F any](
 		_, duplicate := m.transitions[k]
 		if !fromKnown || !toKnown || transition.On == "" || duplicate {
 			return nil, fmt.Errorf(
-				"%w: transition %q + %q -> %q has undeclared states, an empty event, or a duplicate rule",
+				"%w: transition %q + %q -> %q has "+
+					"undeclared states, an empty event, "+
+					"or a duplicate rule",
 				ErrDefinition,
 				transition.From,
 				transition.On,
@@ -93,8 +97,10 @@ func New[S ~string, E ~string, F any](
 }
 
 // Next decides a transition without mutating the entity. Failure returns the
-// original state. A successful decision still needs an atomic persistence check.
-// It does not prove authorization and must not be cached as permission to write.
+// original state. A successful decision still needs an atomic persistence
+// check.
+// It does not prove authorization and must not be cached as permission to
+// write.
 func (m *Machine[S, E, F]) Next(current S, event E, facts F) (S, error) {
 	if m == nil || m.states == nil {
 		return current, ErrDefinition
