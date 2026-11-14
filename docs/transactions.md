@@ -5,8 +5,10 @@ For an atomic operation use the lower-level claim primitives in a thin transport
 or application adapter. Keep the domain operation free of HTTP/pgx dependencies.
 
 ```go
-// Auth, current permission/feature checks, trusted tenant resolution and bounded
-// request fingerprinting precede this block. Claim scope uses verified identity.
+// Auth, current permission/feature checks, trusted tenant resolution and
+// bounded
+// request fingerprinting precede this block. Claim scope uses verified
+// identity.
 replay, err := durable.Begin(
 	ctx,
 	claim,
@@ -25,7 +27,8 @@ if err != nil {
 defer tx.Rollback(context.Background())
 
 // Use typed app sqlc queries bound to this SAME tx; preserve tenant predicates.
-// Insert the business write and its audit. Construct bounded JSON response bytes.
+// Insert the business write and its audit. Construct bounded JSON response
+// bytes.
 response, err := mutateAndAudit(
 	ctx,
 	appQueries.WithTx(tx),
@@ -48,9 +51,46 @@ if err := tx.Commit(ctx); err != nil {
 return writeReplay(&response)
 ```
 
-A rollback leaves neither mutation nor recorded completion, while the independent
+A rollback leaves neither mutation nor recorded completion, while the
+independent
 claim remains pending. An operator can verify rollback before releasing it. A
 commit publishes mutation, audit and completion together, so a retry can replay.
 Never complete using the pool while the business tx is uncommitted. Never place
-an external side effect in a transaction and infer rollback undid it. Integration
+an external side effect in a transaction and infer rollback undid it.
+Integration
 tests in `stores/postgres` exercise this pattern with real PostgreSQL.
+
+## Evaluated lifecycle writes (unpublished reference consumer)
+
+`examples/shipments/postgres` is a separate local-candidate consumer module, not
+an ORM or a production generic adapter. Its restricted dispatch port requires an
+opaque evaluated transition. The concrete writer validates the owning machine,
+then owns a PostgreSQL transaction whose SQL matches scope, entity, source state
+and version before updating state and inserting outbox/audit intent. Tests use a
+real isolated database to reject stale/replayed decisions and prove outbox
+failure rolls back the state update. This demonstrates one adopted write path;
+it does not make all existing application writes mandatory or authorized.
+
+Run `scripts/postgres-check.sh` for disposable-container evidence across the
+existing PostgreSQL adapter and the reference consumer. The consumer's strict
+`make database` command fails without its explicit database URL and rejects
+skipped or absent required SQL cases. Its local Core replacement is intentional
+unpublished development wiring, not release-pin compatibility evidence.
+
+The checked-in Core workflow also invokes that strict disposable database
+command
+with SQL mutations enabled. This is workflow wiring, not verification of hosted
+branch protection or a claim that a remote CI run has executed. Ordinary local
+checks can still skip SQL when no database URL is configured; strict evidence
+comes from the explicit command and its required-case assertions.
+
+The explicit `plutocandidate` application profile additionally demonstrates an
+identity/resource-bound claim attempt followed by fixed SQL mutation, audit,
+typed Jobs enqueue and claim completion in one owned transaction. Its authored
+operation uses shared contract-only ports. The candidate Data adapter gates all
+reads/cache hits, applies SQL visibility before keyset limits and provides a
+bounded export over that same visible query. This profile requires explicit
+local Auth/RBAC/Jobs candidates and `PLUTO_CORE_CANDIDATE_DATA=1`; default Core
+checks and the established adapter pins do not depend on those unpublished APIs.
+See the reference README for exact wiring, operational tests and concurrency
+limits. These application contracts do not make arbitrary callbacks or SQL safe.
